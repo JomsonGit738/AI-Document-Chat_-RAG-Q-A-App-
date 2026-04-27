@@ -1,0 +1,94 @@
+.feature-card,
+.question-card {
+  border: 1px solid var(--border);
+  background:
+    linear-gradient(180deg, rgba(22, 22, 31, 0.96), rgba(17, 17, 24, 0.96)),
+    radial-gradient(circle at top right, rgba(99, 102, 241, 0.12), transparent 35%);
+  border-radius: 28px;
+  padding: 1.25rem;
+  transition:
+    transform 160ms ease-out,
+    border-color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+.feature-card:hover,
+.question-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(129, 140, 248, 0.35);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.2);
+}
+
+.feature-icon,
+.question-icon {
+  display: inline-flex;
+  height: 2.75rem;
+  width: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+}
+
+.question-icon {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-light);
+}
+
+.message-surface {
+  transition: transform 150ms ease-out;
+}
+
+.avatar-assistant {
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+}
+
+.avatar-user {
+  border-color: var(--border);
+  background: var(--bg-card);
+}
+
+.bubble-user {
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+}
+
+.bubble-assistant {
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+}
+
+.group:hover .message-surface {
+  transform: translateY(-1px);
+}
+
+.loading-dot {
+  height: 0.5rem;
+  width: 0.5rem;
+  border-radius: 999px;
+  background: var(--accent-light);
+  animation: pulseDot 900ms infinite ease-in-out;
+}
+
+.animation-delay-100 {
+  animation-delay: 120ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 240ms;
+}
+
+.source-details summary::-webkit-details-marker {
+  display: none;
+}
+
+@keyframes pulseDot {
+  0%,
+  80%,
+  100% {
+    transform: scale(0.7);
+    opacity: 0.45;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.angular/
+.cache/
+coverage/
+.vercel/
+.env
+frontend/.env
+backend/.env
+frontend/.angular/
+frontend/dist/
+backend/uploads/
+

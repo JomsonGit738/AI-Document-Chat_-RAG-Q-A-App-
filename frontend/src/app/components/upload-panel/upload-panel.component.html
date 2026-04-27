@@ -1,0 +1,158 @@
+<aside
+  class="flex h-full flex-col rounded-[32px] border border-[var(--border)] bg-[rgba(17,17,24,0.88)] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.4)] backdrop-blur-xl"
+>
+  <div class="mb-4">
+    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">
+      Workspace
+    </p>
+    <h2 class="mt-2 text-xl font-semibold text-[var(--text-primary)]">Document intake</h2>
+    <p class="mt-1 text-sm text-[var(--text-secondary)]">
+      Upload one PDF and start a source-aware AI conversation with streaming answers.
+    </p>
+  </div>
+
+  <input
+    #fileInput
+    type="file"
+    accept="application/pdf,.pdf"
+    class="hidden"
+    (change)="onFileSelected($event)"
+  />
+
+  <button
+    type="button"
+    class="upload-zone relative flex min-h-[220px] w-full flex-col items-center justify-center gap-3 overflow-hidden rounded-[28px] border border-dashed bg-[rgba(10,10,15,0.7)] px-6 py-7 text-center transition duration-200 hover:-translate-y-0.5"
+    [class.upload-zone--dragging]="isDragging()"
+    [class.upload-zone--active]="!document()"
+    (click)="openFilePicker()"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave($event)"
+    (drop)="onDrop($event)"
+  >
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.12),transparent_55%)]"></div>
+    <span
+      class="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-[rgba(129,140,248,0.22)] bg-[rgba(99,102,241,0.12)] text-[var(--accent-light)]"
+    >
+      <mat-icon>upload_file</mat-icon>
+    </span>
+    <div class="relative space-y-2">
+      <p class="text-base font-semibold text-[var(--text-primary)]">
+        {{ document() ? "Replace your PDF" : "Drop your PDF here or click to browse" }}
+      </p>
+      <p class="mx-auto max-w-[220px] text-sm leading-6 text-[var(--text-secondary)]">
+        Fast upload, automatic chunking, and streamed RAG answers in one workflow.
+      </p>
+    </div>
+  </button>
+
+  @if (uploadStatus() === "loading") {
+    <div class="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+      <div class="mb-2 flex items-center justify-between text-sm text-[var(--text-secondary)]">
+        <span>Uploading document</span>
+        <span>{{ uploadProgress() }}%</span>
+      </div>
+      <mat-progress-bar mode="determinate" [value]="uploadProgress()" />
+    </div>
+  }
+
+  @if (effectiveError()) {
+    <p class="mt-3 rounded-2xl border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-4 py-3 text-sm text-[var(--error)]">
+      {{ effectiveError() }}
+    </p>
+  }
+
+  @if (document(); as document) {
+    <div class="mt-4 flex-1 space-y-4">
+      <section class="rounded-[28px] border border-[var(--border)] bg-[var(--bg-card)] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.22)]">
+        <div class="mb-4 flex items-start justify-between gap-4">
+          <div class="flex min-w-0 items-start gap-3">
+            <div
+              class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[rgba(99,102,241,0.16)] text-[var(--accent-light)]"
+            >
+              <mat-icon>description</mat-icon>
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-[var(--text-primary)]">
+                {{ document.fileName }}
+              </p>
+              <p class="mt-1 text-xs text-[var(--text-secondary)]">
+                {{ formatBytes(document.fileSize) }} · {{ document.pageCount }} pages
+              </p>
+              <p class="mt-1 text-xs text-[var(--text-muted)]">
+                Uploaded {{ document.uploadedAt | date: "short" }}
+              </p>
+            </div>
+          </div>
+
+          <button
+            mat-icon-button
+            type="button"
+            aria-label="Remove document"
+            matTooltip="Remove document"
+            class="!text-[var(--text-secondary)]"
+            (click)="removeDocument()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="rounded-[24px] border border-[var(--border)] bg-[rgba(10,10,15,0.74)] p-3">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <span
+              class="inline-flex items-center gap-2 rounded-full border border-[rgba(16,185,129,0.2)] bg-[rgba(16,185,129,0.12)] px-3 py-1 text-xs font-medium text-[var(--success)]"
+            >
+              <span class="h-2 w-2 rounded-full bg-[var(--success)]"></span>
+              Document ready
+            </span>
+            <span class="text-xs text-[var(--text-muted)]">First-page preview</span>
+          </div>
+
+          <div
+            class="preview-shell flex min-h-[180px] items-center justify-center overflow-hidden rounded-[22px] border border-[var(--border)] bg-[#f7f7fb]"
+          >
+            @if (previewError()) {
+              <p class="px-6 text-center text-sm text-slate-500">{{ previewError() }}</p>
+            } @else {
+              <canvas
+                #previewCanvas
+                class="max-h-[220px] w-auto max-w-full rounded-xl shadow-[0_18px_30px_rgba(15,23,42,0.15)]"
+                [class.opacity-0]="!previewReady()"
+              ></canvas>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-[28px] border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-[var(--text-primary)]">Suggested questions</h3>
+            <p class="mt-1 text-xs text-[var(--text-secondary)]">
+              Seeded from the uploaded document for a faster first question.
+            </p>
+          </div>
+          <span class="rounded-full bg-[rgba(99,102,241,0.12)] px-2.5 py-1 text-xs text-[var(--accent-light)]">
+            AI seeded
+          </span>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+          @for (question of document.starterQuestions; track question) {
+            <button
+              type="button"
+              class="chip-lift rounded-full border border-[var(--border)] bg-[rgba(99,102,241,0.08)] px-4 py-2 text-left text-sm text-[var(--text-secondary)] transition hover:border-[rgba(129,140,248,0.45)] hover:bg-[rgba(99,102,241,0.14)] hover:text-[var(--text-primary)]"
+              (click)="emitSuggestedQuestion(question)"
+            >
+              {{ question }}
+            </button>
+          }
+        </div>
+      </section>
+    </div>
+  }
+
+  <div class="mt-4 border-t border-[var(--border)] pt-4 text-xs text-[var(--text-muted)]">
+    Supports PDF up to 10MB
+  </div>
+</aside>
+

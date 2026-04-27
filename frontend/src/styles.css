@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #111118;
+  --bg-card: #16161f;
+  --bg-hover: #1e1e2a;
+  --border: #2a2a3a;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+summary:focus-visible {
+  outline: 2px solid rgba(129, 140, 248, 0.95);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 85, 105, 0.6);
+  border-radius: 999px;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24;
+}
+
+.mat-mdc-unelevated-button:not(:disabled) {
+  --mdc-filled-button-container-color: var(--accent);
+  --mdc-filled-button-label-text-color: #ffffff;
+}
+
+.mat-mdc-outlined-button:not(:disabled) {
+  --mdc-outlined-button-outline-color: rgba(129, 140, 248, 0.28);
+  --mdc-outlined-button-label-text-color: var(--text-primary);
+}
+
+.mat-mdc-progress-bar {
+  --mdc-linear-progress-active-indicator-color: var(--accent);
+  --mdc-linear-progress-track-color: rgba(99, 102, 241, 0.14);
+  border-radius: 999px;
+}
+
+.docchat-snackbar .mdc-snackbar__surface {
+  border: 1px solid var(--border);
+  border-radius: 18px !important;
+  background: rgba(17, 17, 24, 0.95) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.35) !important;
+}
+
+.docchat-snackbar .mat-mdc-button {
+  color: var(--accent-light) !important;
+}
