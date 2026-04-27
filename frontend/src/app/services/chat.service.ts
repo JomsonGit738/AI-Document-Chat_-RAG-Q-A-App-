@@ -1,7 +1,7 @@
 import { Injectable, inject } from "@angular/core";
 import { BehaviorSubject } from "rxjs";
 import { environment } from "../../environments/environment";
-import { ChatMessage, SourceChunk, SseEventPayload } from "../models/docchat.models";
+import { ChatMessage, SseEventPayload } from "../models/docchat.models";
 import { DocumentService } from "./document.service";
 
 @Injectable({

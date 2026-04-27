@@ -7,7 +7,8 @@ import {
   afterNextRender,
   computed,
   effect,
-  inject
+  inject,
+  signal
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { toSignal } from "@angular/core/rxjs-interop";
@@ -19,7 +20,7 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ChatMessage } from "../../models/docchat.models";
+import { ChatMessage, MessageSource } from "../../models/docchat.models";
 import { ChatService } from "../../services/chat.service";
 import { DocumentService } from "../../services/document.service";
 
@@ -65,8 +66,9 @@ export class ChatPanelComponent {
   });
   protected readonly toastMessage = toSignal(this.chatService.toast$, { initialValue: null });
   protected readonly showEmptyState = computed(() => !this.document());
+  protected readonly activeTab = signal<"summary" | "chat">("chat");
   protected readonly showQuestionCards = computed(
-    () => !!this.document() && this.messages().length === 0
+    () => !!this.document() && this.activeTab() === "chat" && this.messages().length === 0
   );
   protected readonly exampleQuestions = computed(() => {
     const document = this.document();
@@ -80,6 +82,19 @@ export class ChatPanelComponent {
 
     return Array.from(new Set([...generated, ...fallback])).slice(0, 4);
   });
+  protected readonly latestAssistantMessageWithSources = computed(() => {
+    const messages = this.messages();
+
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+
+      if (message.role === "assistant" && message.sources?.length) {
+        return message;
+      }
+    }
+
+    return null;
+  });
 
   protected readonly questionForm = new FormGroup({
     question: new FormControl("", {
@@ -87,11 +102,35 @@ export class ChatPanelComponent {
       validators: [Validators.required, Validators.maxLength(500)]
     })
   });
+  protected readonly sourceModal = signal<{
+    messageId: string;
+    sources: MessageSource[];
+  } | null>(null);
+  protected readonly copiedMessageId = signal<string | null>(null);
 
   @ViewChild("scrollViewport")
   private scrollViewport?: ElementRef<HTMLDivElement>;
+  private previousSessionId: string | null = null;
 
   constructor() {
+    effect(() => {
+      const sessionId = this.document()?.sessionId ?? null;
+
+      if (!sessionId) {
+        this.activeTab.set("chat");
+        this.sourceModal.set(null);
+        this.previousSessionId = null;
+        return;
+      }
+
+      if (this.previousSessionId !== sessionId) {
+        this.activeTab.set("summary");
+        this.sourceModal.set(null);
+      }
+
+      this.previousSessionId = sessionId;
+    }, { allowSignalWrites: true });
+
     effect(() => {
       this.messages();
       this.isStreaming();
@@ -137,6 +176,7 @@ export class ChatPanelComponent {
   }
 
   async submitSuggestedQuestion(question: string): Promise<void> {
+    this.activeTab.set("chat");
     this.questionControl.setValue(question);
     await this.sendCurrentQuestion();
   }
@@ -169,6 +209,10 @@ export class ChatPanelComponent {
     this.chatService.stopStreaming();
   }
 
+  protected selectTab(tab: "summary" | "chat"): void {
+    this.activeTab.set(tab);
+  }
+
   protected async retryMessage(question: string | undefined): Promise<void> {
     const session = this.document();
 
@@ -183,9 +227,55 @@ export class ChatPanelComponent {
     this.documentService.removeCurrentDocument();
     this.documentService.clearSessionExpiredBanner();
     this.chatService.clearConversation();
+    this.sourceModal.set(null);
   }
 
   protected isAssistantStreaming(message: ChatMessage): boolean {
     return this.activeAssistantId() === message.id && this.isStreaming() && message.role === "assistant";
+  }
+
+  protected openSourcesModal(message: ChatMessage): void {
+    if (!message.sources?.length) {
+      return;
+    }
+
+    this.sourceModal.set({
+      messageId: message.id,
+      sources: message.sources
+    });
+  }
+
+  protected closeSourcesModal(): void {
+    this.sourceModal.set(null);
+  }
+
+  protected openLatestSourcesModal(): void {
+    const message = this.latestAssistantMessageWithSources();
+
+    if (message) {
+      this.openSourcesModal(message);
+    }
+  }
+
+  protected async copyMessage(message: ChatMessage): Promise<void> {
+    if (!message.content.trim()) {
+      return;
+    }
+
+    await navigator.clipboard.writeText(message.content);
+    this.copiedMessageId.set(message.id);
+
+    window.setTimeout(() => {
+      if (this.copiedMessageId() === message.id) {
+        this.copiedMessageId.set(null);
+      }
+    }, 1200);
+  }
+
+  protected formatAssistantContent(content: string): string {
+    return content
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/[ \t]+\n/g, "\n")
+      .trim();
   }
 }

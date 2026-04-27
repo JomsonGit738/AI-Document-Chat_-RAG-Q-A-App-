@@ -133,6 +133,10 @@ export class UploadPanelComponent {
   }
 
   protected openFilePicker(): void {
+    if (this.uploadStatus() === "loading") {
+      return;
+    }
+
     this.fileInput?.nativeElement.click();
   }
 
@@ -143,16 +147,28 @@ export class UploadPanelComponent {
   }
 
   protected onDragOver(event: DragEvent): void {
+    if (this.uploadStatus() === "loading") {
+      return;
+    }
+
     event.preventDefault();
     this.isDragging.set(true);
   }
 
   protected onDragLeave(event: DragEvent): void {
+    if (this.uploadStatus() === "loading") {
+      return;
+    }
+
     event.preventDefault();
     this.isDragging.set(false);
   }
 
   protected onDrop(event: DragEvent): void {
+    if (this.uploadStatus() === "loading") {
+      return;
+    }
+
     event.preventDefault();
     this.isDragging.set(false);
     this.handleFiles(event.dataTransfer?.files || null);
@@ -187,6 +203,10 @@ export class UploadPanelComponent {
   }
 
   private handleFiles(fileList: FileList | null): void {
+    if (this.uploadStatus() === "loading") {
+      return;
+    }
+
     const file = fileList?.item(0);
 
     if (!file) {

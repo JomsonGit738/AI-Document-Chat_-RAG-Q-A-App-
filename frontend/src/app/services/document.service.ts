@@ -102,6 +102,7 @@ export class DocumentService {
             uploadedAt: response.document.uploadedAt,
             excerpt: response.excerpt,
             starterQuestions: response.starterQuestions,
+            summary: response.summary,
             objectUrl: URL.createObjectURL(file)
           };
 

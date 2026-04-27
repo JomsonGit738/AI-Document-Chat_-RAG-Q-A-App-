@@ -1,5 +1,8 @@
 export interface UploadResponse {
   sessionId: string;
+  fileName?: string;
+  fileSize?: number;
+  pageCount?: number;
   document: {
     fileName: string;
     fileSize: number;
@@ -8,6 +11,7 @@ export interface UploadResponse {
   };
   excerpt: string;
   starterQuestions: string[];
+  summary: string[];
 }
 
 export interface DocumentSession {
@@ -18,14 +22,13 @@ export interface DocumentSession {
   uploadedAt: string;
   excerpt: string;
   starterQuestions: string[];
+  summary: string[];
   objectUrl: string;
 }
 
-export interface SourceChunk {
-  id: number;
-  label: string;
+export interface MessageSource {
+  chunkIndex: number;
   excerpt: string;
-  score: number;
 }
 
 export type MessageRole = "user" | "assistant";
@@ -38,14 +41,13 @@ export interface ChatMessage {
   content: string;
   createdAt: string;
   status: MessageStatus;
-  sources: SourceChunk[];
+  sources?: MessageSource[];
   retryQuestion?: string;
 }
 
 export interface SseEventPayload {
   content?: string;
-  sources?: SourceChunk[];
+  sources?: MessageSource[];
   error?: string;
   complete?: boolean;
 }
-

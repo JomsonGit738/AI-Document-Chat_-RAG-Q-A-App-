@@ -1,5 +1,8 @@
 .upload-zone {
-  border-color: rgba(99, 102, 241, 0.16);
+  border-color: rgba(99, 102, 241, 0.52);
+  box-shadow:
+    inset 0 0 0 1px rgba(99, 102, 241, 0.12),
+    0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .upload-zone--active:hover,
@@ -23,6 +26,42 @@
   box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
 }
 
+.document-icon {
+  position: relative;
+}
+
+.document-icon .icon-default,
+.document-icon .icon-edit {
+  position: absolute;
+  transition:
+    opacity 140ms ease-out,
+    transform 140ms ease-out;
+}
+
+.document-icon .icon-default {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.document-icon .icon-edit {
+  opacity: 0;
+  transform: scale(0.88);
+}
+
+.document-icon:hover .icon-default {
+  opacity: 0;
+  transform: scale(0.88);
+}
+
+.document-icon:hover .icon-edit {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.summary-pill {
+  animation: summaryReveal 150ms ease-out forwards;
+}
+
 @keyframes pulseBorder {
   0%,
   100% {
@@ -35,3 +74,13 @@
   }
 }
 
+@keyframes summaryReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

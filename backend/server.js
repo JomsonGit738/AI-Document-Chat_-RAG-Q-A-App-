@@ -135,6 +135,7 @@ app.post("/api/upload", (req, res) => {
         vector: buildTermFrequency(text)
       }));
       const excerpt = rawText.slice(0, 200);
+      const summary = await generateDocumentSummary(rawText.slice(0, 3000));
       const starterQuestions = await generateStarterQuestions(excerpt);
 
       sessions.set(sessionId, {
@@ -149,6 +150,9 @@ app.post("/api/upload", (req, res) => {
 
       res.status(201).json({
         sessionId,
+        fileName: req.file.originalname,
+        fileSize: req.file.size,
+        pageCount: parsed.numpages || 0,
         document: {
           fileName: req.file.originalname,
           fileSize: req.file.size,
@@ -156,7 +160,8 @@ app.post("/api/upload", (req, res) => {
           uploadedAt: new Date().toISOString()
         },
         excerpt,
-        starterQuestions
+        starterQuestions,
+        summary
       });
     } catch (parseError) {
       res.status(400).json({
@@ -198,15 +203,10 @@ app.post("/api/chat", async (req, res) => {
   res.flushHeaders();
 
   const topChunks = rankChunks(question, session.chunks).slice(0, 3);
-
-  sendEvent(res, "sources", {
-    sources: topChunks.map((chunk) => ({
-      id: chunk.id,
-      label: chunk.label,
-      excerpt: truncate(chunk.text, 240),
-      score: Number(chunk.score.toFixed(4))
-    }))
-  });
+  const sourceMetadata = topChunks.map((chunk) => ({
+    chunkIndex: chunk.id,
+    excerpt: truncate(chunk.text, 120)
+  }));
 
   if (!groq) {
     sendEvent(res, "error", {
@@ -249,6 +249,9 @@ app.post("/api/chat", async (req, res) => {
     }
 
     sendEvent(res, "done", { complete: true });
+    sendEvent(res, "sources", {
+      sources: sourceMetadata
+    });
     res.end();
   } catch (groqError) {
     console.error("Groq API request failed:", summarizeGroqError(groqError));
@@ -257,6 +260,9 @@ app.post("/api/chat", async (req, res) => {
       error: resolveGroqErrorMessage(groqError, MODEL)
     });
     sendEvent(res, "done", { complete: true });
+    sendEvent(res, "sources", {
+      sources: sourceMetadata
+    });
     res.end();
   }
 });
@@ -422,6 +428,39 @@ async function generateStarterQuestions(excerpt) {
   }
 }
 
+async function generateDocumentSummary(excerpt) {
+  if (!groq) {
+    return fallbackDocumentSummary(excerpt);
+  }
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "user",
+          content: [
+            "Summarize this document in exactly 3 bullet points. Each bullet should be one clear sentence. Return only the 3 bullets, no intro text.",
+            excerpt
+          ].join("\n\n")
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 220
+    });
+    const content = completion.choices?.[0]?.message?.content || "";
+    const bullets = content
+      .split("\n")
+      .map((line) => line.replace(/^\s*[-*•]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    return bullets.length === 3 ? bullets : fallbackDocumentSummary(excerpt);
+  } catch (_error) {
+    return fallbackDocumentSummary(excerpt);
+  }
+}
+
 function fallbackStarterQuestions(excerpt) {
   const nouns = excerpt
     .split(/[.?!]/)
@@ -436,6 +475,20 @@ function fallbackStarterQuestions(excerpt) {
     `Can you summarize the section about ${secondary.toLowerCase()}?`,
     "Which details in this document matter most?"
   ];
+}
+
+function fallbackDocumentSummary(excerpt) {
+  const sentences = excerpt
+    .split(/[.?!]/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .slice(0, 3);
+
+  while (sentences.length < 3) {
+    sentences.push("This document contains additional details that can be explored in chat.");
+  }
+
+  return sentences.map((sentence) => `${sentence.replace(/\s+/g, " ").trim()}.`);
 }
 
 function sendEvent(response, event, payload) {

@@ -1,5 +1,5 @@
 <section
-  class="flex h-full min-h-[720px] flex-col overflow-hidden rounded-[32px] border border-[var(--border)] bg-[rgba(17,17,24,0.88)] shadow-[0_24px_70px_rgba(0,0,0,0.4)] backdrop-blur-xl"
+  class="relative flex h-full min-h-0 flex-col overflow-hidden bg-[rgba(255,253,250,0.92)] backdrop-blur-xl"
 >
   @if (showEmptyState()) {
     <div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
@@ -68,22 +68,58 @@
         </div>
       }
 
-      <div class="border-b border-[var(--border)] px-4 py-4 sm:px-6">
-        <div class="flex flex-wrap items-center gap-3">
-          <span
-            class="inline-flex items-center gap-2 rounded-full border border-[rgba(99,102,241,0.2)] bg-[rgba(99,102,241,0.1)] px-3 py-1.5 text-sm text-[var(--accent-light)]"
+      <div>
+        <div class="browser-tab-strip">
+          <button
+            type="button"
+            class="browser-tab text-xs"
+            [class.browser-tab--active]="activeTab() === 'summary'"
+            (click)="selectTab('summary')"
           >
-            <span class="h-2 w-2 rounded-full bg-[var(--accent)]"></span>
-            Answering from: {{ document()?.fileName }}
-          </span>
-          <span class="text-xs uppercase tracking-[0.24em] text-[var(--text-muted)]">
-            Live session
-          </span>
+            <span class="browser-tab-dot"></span>
+            Summary
+          </button>
+          <button
+            type="button"
+            class="browser-tab text-xs"
+            [class.browser-tab--active]="activeTab() === 'chat'"
+            (click)="selectTab('chat')"
+          >
+            <span class="browser-tab-dot"></span>
+            Chat
+          </button>
         </div>
       </div>
 
-      @if (showQuestionCards()) {
-        <div class="flex flex-1 flex-col justify-center px-4 py-8 sm:px-6">
+      @if (activeTab() === "summary") {
+        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
+          <div class="w-full max-w-[920px]">
+            <div class="mb-6">
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+                Document Summary
+              </p>
+              <h3 class="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
+                Quick overview of the uploaded document
+              </h3>
+            </div>
+
+            <div class="space-y-0">
+              @for (bullet of document()?.summary || []; track bullet; let index = $index) {
+                <div
+                  class="summary-card opacity-0 px-0 py-1"
+                  [style.animationDelay.ms]="index * 150"
+                >
+                  <div class="flex items-start gap-3">
+                    <span class="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[var(--accent)]"></span>
+                    <p class="text-base leading-8 text-[var(--text-secondary)]">{{ bullet }}</p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      } @else if (showQuestionCards()) {
+        <div class="flex min-h-0 flex-1 flex-col justify-center rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
           <div class="mx-auto w-full max-w-[920px]">
             <h3 class="text-2xl font-semibold text-[var(--text-primary)]">Start with a focused prompt</h3>
             <p class="mt-2 text-sm text-[var(--text-secondary)]">
@@ -112,7 +148,7 @@
                           }}
                         </mat-icon>
                       </span>
-                      <p class="text-base font-medium text-[var(--text-primary)]">
+                      <p class="question-card-text font-medium text-[var(--text-primary)]">
                         {{ question }}
                       </p>
                     </div>
@@ -124,7 +160,7 @@
           </div>
         </div>
       } @else {
-        <div #scrollViewport class="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-6">
+        <div #scrollViewport class="min-h-0 flex-1 space-y-5 overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
           @for (message of messages(); track message.id) {
             <div
               class="flex"
@@ -133,28 +169,16 @@
               [@messageEnter]
             >
               <div
-                class="flex max-w-[min(100%,780px)] gap-3"
-                [class.flex-row-reverse]="message.role === 'user'"
+                class="flex max-w-[min(100%,820px)]"
+                [class.justify-end]="message.role === 'user'"
               >
-                <div
-                  class="mt-1 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-semibold"
-                  [ngClass]="{
-                    'avatar-assistant text-white': message.role === 'assistant',
-                    'avatar-user border text-[var(--text-secondary)]': message.role === 'user'
-                  }"
-                >
-                  {{ message.role === "assistant" ? "D" : "You" }}
-                </div>
-
-                <div class="group min-w-0">
+                <div class="group relative min-w-0">
                   <div
-                    class="message-surface rounded-[26px] px-4 py-4 text-sm leading-7 shadow-[0_16px_40px_rgba(0,0,0,0.18)]"
+                    class="message-surface px-0 py-1 text-base leading-8"
                     [ngClass]="{
-                      'bubble-user rounded-tr-md text-white': message.role === 'user',
-                      'bubble-assistant rounded-tl-md': message.role === 'assistant'
+                      'message-user text-[var(--text-primary)]': message.role === 'user',
+                      'message-assistant text-[var(--text-primary)]': message.role === 'assistant'
                     }"
-                    [matTooltip]="message.createdAt | date: 'medium'"
-                    matTooltipPosition="above"
                   >
                     @if (message.status === "loading" && !message.content) {
                       <div class="flex items-center gap-1.5 py-2">
@@ -163,51 +187,20 @@
                         <span class="loading-dot animation-delay-200"></span>
                       </div>
                     } @else {
-                      <p class="whitespace-pre-wrap break-words">
-                        {{ message.content }}
+                      <p
+                        class="break-words"
+                        [ngClass]="{
+                          'whitespace-pre-wrap': message.role === 'user',
+                          'whitespace-pre-line': message.role === 'assistant'
+                        }"
+                      >
+                        {{ message.role === "assistant" ? formatAssistantContent(message.content) : message.content }}
                         @if (isAssistantStreaming(message)) {
                           <span
                             class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent-light)] align-middle animate-cursor"
                           ></span>
                         }
                       </p>
-                    }
-
-                    @if (message.role === "assistant" && message.sources.length > 0) {
-                      <details class="source-details mt-4 rounded-2xl border border-[var(--border)] bg-[rgba(10,10,15,0.5)] p-3">
-                        <summary class="cursor-pointer list-none">
-                          <div class="flex flex-wrap items-center gap-2">
-                            <span class="text-xs font-medium uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                              Sources used
-                            </span>
-                            @for (source of message.sources; track source.id) {
-                              <span
-                                class="inline-flex rounded-full border border-[rgba(99,102,241,0.18)] bg-[rgba(99,102,241,0.1)] px-2.5 py-1 text-xs text-[var(--accent-light)]"
-                              >
-                                {{ source.label }}
-                              </span>
-                            }
-                          </div>
-                        </summary>
-
-                        <div class="mt-3 space-y-3">
-                          @for (source of message.sources; track source.id) {
-                            <div class="rounded-2xl border border-[var(--border)] bg-[rgba(17,17,24,0.8)] p-3">
-                              <div class="mb-2 flex items-center justify-between gap-3">
-                                <span class="text-xs font-semibold text-[var(--text-primary)]">
-                                  {{ source.label }}
-                                </span>
-                                <span class="text-[11px] uppercase tracking-[0.16em] text-[var(--text-muted)]">
-                                  score {{ source.score | number: "1.2-2" }}
-                                </span>
-                              </div>
-                              <p class="text-xs leading-6 text-[var(--text-secondary)]">
-                                {{ source.excerpt }}
-                              </p>
-                            </div>
-                          }
-                        </div>
-                      </details>
                     }
 
                     @if (message.status === "error" && message.retryQuestion) {
@@ -223,6 +216,21 @@
                       </div>
                     }
                   </div>
+
+                  @if (message.role === "assistant") {
+                    <div class="message-actions">
+                      <button
+                        type="button"
+                        aria-label="Copy response"
+                        class="message-action-button"
+                        (click)="copyMessage(message)"
+                      >
+                        <mat-icon>
+                          {{ copiedMessageId() === message.id ? "done" : "content_copy" }}
+                        </mat-icon>
+                      </button>
+                    </div>
+                  }
                 </div>
               </div>
             </div>
@@ -230,59 +238,110 @@
         </div>
       }
 
-      <div class="border-t border-[var(--border)] bg-[rgba(10,10,15,0.72)] px-4 py-4 sm:px-6">
-        <form
-          class="rounded-[28px] border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-[0_18px_50px_rgba(0,0,0,0.22)]"
-          [formGroup]="questionForm"
-          (submit)="$event.preventDefault(); sendCurrentQuestion()"
-        >
-          <textarea
-            cdkTextareaAutosize
-            cdkAutosizeMinRows="1"
-            cdkAutosizeMaxRows="4"
-            formControlName="question"
-            maxlength="500"
-            rows="1"
-            class="min-h-[54px] w-full resize-none bg-transparent px-2 py-2 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
-            placeholder="Ask a specific question about this document..."
-            (keydown)="onComposerKeydown($event)"
-          ></textarea>
-
-          <div
-            class="mt-3 flex flex-col gap-3 border-t border-[var(--border)] pt-3 sm:flex-row sm:items-center sm:justify-between"
+      @if (activeTab() === "chat") {
+        <div class="flex-shrink-0 bg-[rgba(248,248,246,0.92)] py-2">
+          <form
+            class="rounded-[16px] border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 shadow-[0_8px_20px_rgba(49,45,35,0.08)]"
+            [formGroup]="questionForm"
+            (submit)="$event.preventDefault(); sendCurrentQuestion()"
           >
-            <div class="space-y-1">
-              <p class="text-xs text-[var(--text-secondary)]">
-                Answering from:
-                <span class="font-medium text-[var(--text-primary)]">{{ document()?.fileName }}</span>
-              </p>
-              <p class="text-xs text-[var(--text-muted)]">{{ currentCharacterCount }}/500</p>
-            </div>
+            <textarea
+              cdkTextareaAutosize
+              cdkAutosizeMinRows="1"
+              cdkAutosizeMaxRows="4"
+              formControlName="question"
+              maxlength="500"
+              rows="1"
+              class="min-h-[48px] w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              class="chat-composer-textarea min-h-[48px] w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              placeholder="Ask a specific question about this document..."
+              (keydown)="onComposerKeydown($event)"
+            ></textarea>
 
-            @if (isStreaming()) {
-              <button
-                mat-stroked-button
-                type="button"
-                class="!rounded-full !border-[rgba(239,68,68,0.28)] !text-[var(--error)]"
-                (click)="stopStreaming()"
-              >
-                Stop generating
-              </button>
-            } @else {
-              <button
-                mat-flat-button
-                type="submit"
-                class="!rounded-full"
-                [disabled]="questionControl.invalid || !questionControl.value.trim()"
-              >
-                <span class="inline-flex items-center gap-2">
-                  <mat-icon>arrow_upward</mat-icon>
-                  Send
-                </span>
-              </button>
-            }
+            <div
+              class="mt-2 flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div class="flex items-center gap-1.5">
+                @if (latestAssistantMessageWithSources()) {
+                  <button
+                    type="button"
+                    aria-label="View source chunks"
+                    class="message-action-button"
+                    (click)="openLatestSourcesModal()"
+                  >
+                    <mat-icon>article</mat-icon>
+                  </button>
+                }
+                <p class="text-xs text-[var(--text-muted)]">{{ currentCharacterCount }}/500</p>
+              </div>
+
+              @if (isStreaming()) {
+                <button
+                  mat-stroked-button
+                  type="button"
+                  class="composer-stop-button !border-[rgba(239,68,68,0.28)] !text-[var(--error)]"
+                  (click)="stopStreaming()"
+                >
+                  Stop generating
+                </button>
+              } @else {
+                <button
+                  mat-flat-button
+                  type="submit"
+                  class="composer-submit-button"
+                  [disabled]="questionControl.invalid || !questionControl.value.trim()"
+                >
+                  <span class="inline-flex items-center gap-1.5">
+                    <mat-icon>arrow_upward</mat-icon>
+                    Send
+                  </span>
+                </button>
+              }
+            </div>
+          </form>
+        </div>
+      }
+    </div>
+  }
+
+  @if (sourceModal(); as modal) {
+    <div class="source-modal-overlay" (click)="closeSourcesModal()">
+      <div
+        class="source-modal"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="source-modal-header">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              Source Chunks
+            </p>
+            <h3 class="mt-1 text-lg font-semibold text-[var(--text-primary)]">
+              Context used for this response
+            </h3>
           </div>
-        </form>
+
+          <button
+            type="button"
+            aria-label="Close source modal"
+            class="source-modal-close"
+            (click)="closeSourcesModal()"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="mt-5 space-y-3 overflow-y-auto">
+          @for (source of modal.sources; track source.chunkIndex) {
+            <div class="source-modal-card">
+              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
+                Chunk #{{ source.chunkIndex }}
+              </p>
+              <blockquote class="source-modal-quote">
+                {{ source.excerpt }}
+              </blockquote>
+            </div>
+          }
+        </div>
       </div>
     </div>
   }
