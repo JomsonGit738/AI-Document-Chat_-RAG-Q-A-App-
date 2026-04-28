@@ -4,19 +4,20 @@
 
 :root {
   color-scheme: light;
-  --bg-primary: #f8f8f6;
-  --bg-secondary: #f1f0ea;
-  --bg-card: #fffdfa;
-  --bg-hover: #f2f0e8;
-  --border: #ddd8cc;
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --text-primary: #1f1f1a;
-  --text-secondary: #5f5b52;
-  --text-muted: #8b867b;
-  --success: #10b981;
-  --error: #ef4444;
-  --warning: #f59e0b;
+  --bg-primary: #eef2ff;
+  --bg-secondary: #f5f7ff;
+  --bg-card: #ffffff;
+  --bg-hover: #edf2ff;
+  --border: #d9e2ff;
+  --accent: #4b49ac;
+  --accent-light: #98bdff;
+  --accent-secondary: #7978e9;
+  --text-primary: #20223a;
+  --text-secondary: #62698b;
+  --text-muted: #98a0bf;
+  --success: #7da0fa;
+  --error: #f3797e;
+  --warning: #7978e9;
 }
 
 * {
@@ -29,7 +30,7 @@ body {
   min-height: 100%;
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: "Inter", sans-serif;
+  font-family: "Poppins", sans-serif;
 }
 
 body {
@@ -48,7 +49,7 @@ input:focus-visible,
 textarea:focus-visible,
 a:focus-visible,
 summary:focus-visible {
-  outline: 2px solid rgba(129, 140, 248, 0.95);
+  outline: 2px solid rgba(75, 73, 172, 0.9);
   outline-offset: 2px;
 }
 
@@ -62,7 +63,7 @@ summary:focus-visible {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 134, 123, 0.55);
+  background: rgba(121, 120, 233, 0.42);
   border-radius: 999px;
 }
 
@@ -92,25 +93,26 @@ summary:focus-visible {
 .mat-mdc-unelevated-button:not(:disabled) {
   --mdc-filled-button-container-color: var(--accent);
   --mdc-filled-button-label-text-color: #ffffff;
+  box-shadow: 0 12px 24px rgba(75, 73, 172, 0.18);
 }
 
 .mat-mdc-outlined-button:not(:disabled) {
-  --mdc-outlined-button-outline-color: rgba(129, 140, 248, 0.28);
-  --mdc-outlined-button-label-text-color: var(--text-primary);
+  --mdc-outlined-button-outline-color: rgba(75, 73, 172, 0.22);
+  --mdc-outlined-button-label-text-color: var(--accent);
 }
 
 .mat-mdc-progress-bar {
   --mdc-linear-progress-active-indicator-color: var(--accent);
-  --mdc-linear-progress-track-color: rgba(99, 102, 241, 0.14);
+  --mdc-linear-progress-track-color: rgba(152, 189, 255, 0.26);
   border-radius: 999px;
 }
 
 .docchat-snackbar .mdc-snackbar__surface {
   border: 1px solid var(--border);
   border-radius: 18px !important;
-  background: rgba(255, 253, 250, 0.98) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
   color: var(--text-primary) !important;
-  box-shadow: 0 20px 40px rgba(49, 45, 35, 0.12) !important;
+  box-shadow: 0 18px 36px rgba(75, 73, 172, 0.1) !important;
 }
 
 .docchat-snackbar .mat-mdc-button {

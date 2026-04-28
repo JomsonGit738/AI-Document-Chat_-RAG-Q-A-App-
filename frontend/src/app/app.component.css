@@ -1,8 +1,7 @@
 .grid-overlay {
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+    linear-gradient(rgba(152, 189, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(152, 189, 255, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
 }
-

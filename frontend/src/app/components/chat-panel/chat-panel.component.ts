@@ -24,6 +24,11 @@ import { ChatMessage, MessageSource } from "../../models/docchat.models";
 import { ChatService } from "../../services/chat.service";
 import { DocumentService } from "../../services/document.service";
 
+interface AssistantContentBlock {
+  type: "paragraph" | "list";
+  items: string[];
+}
+
 @Component({
   selector: "app-chat-panel",
   standalone: true,
@@ -274,8 +279,73 @@ export class ChatPanelComponent {
 
   protected formatAssistantContent(content: string): string {
     return content
-      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\n{2,}/g, "\n")
       .replace(/[ \t]+\n/g, "\n")
       .trim();
+  }
+
+  protected parseAssistantContent(content: string): AssistantContentBlock[] {
+    const normalized = this.formatAssistantContent(content);
+
+    if (!normalized) {
+      return [];
+    }
+
+    const lines = normalized.split("\n");
+    const blocks: AssistantContentBlock[] = [];
+    let paragraphBuffer: string[] = [];
+    let listBuffer: string[] = [];
+
+    const flushParagraph = (): void => {
+      if (!paragraphBuffer.length) {
+        return;
+      }
+
+      blocks.push({
+        type: "paragraph",
+        items: [paragraphBuffer.join(" ").trim()]
+      });
+      paragraphBuffer = [];
+    };
+
+    const flushList = (): void => {
+      if (!listBuffer.length) {
+        return;
+      }
+
+      blocks.push({
+        type: "list",
+        items: [...listBuffer]
+      });
+      listBuffer = [];
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+
+      if (!line) {
+        flushParagraph();
+        flushList();
+        continue;
+      }
+
+      if (this.isListLine(line)) {
+        flushParagraph();
+        listBuffer.push(line.replace(/^((\*|-|•)\s+|\d+\.\s+)/, "").trim());
+        continue;
+      }
+
+      flushList();
+      paragraphBuffer.push(line);
+    }
+
+    flushParagraph();
+    flushList();
+
+    return blocks;
+  }
+
+  private isListLine(line: string): boolean {
+    return /^((\*|-|•)\s+|\d+\.\s+)/.test(line);
   }
 }

@@ -1,5 +1,5 @@
 <aside
-  class="flex h-full min-h-0 flex-col overflow-y-auto bg-[rgba(255,253,250,0.92)] p-4 backdrop-blur-xl"
+  class="flex h-full min-h-0 flex-col overflow-y-auto rounded-[16px] border border-[rgba(217,226,255,0.95)] bg-[rgba(255,255,255,0.82)] p-4"
 >
   <div class="mb-4">
     <p class="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--text-muted)]">
@@ -22,7 +22,7 @@
   @if (!document() && uploadStatus() !== "loading") {
     <button
       type="button"
-      class="upload-zone relative flex min-h-[96px] w-full items-center gap-3 overflow-hidden rounded-[10px] border border-dashed bg-[rgba(241,240,234,0.95)] px-3 py-3 text-left transition duration-200 hover:-translate-y-0.5"
+      class="upload-zone relative flex min-h-[96px] w-full items-center gap-3 overflow-hidden rounded-[10px] border border-dashed bg-[rgba(232,238,255,0.98)] px-3 py-3 text-left transition duration-200 hover:-translate-y-0.5"
       [class.upload-zone--dragging]="isDragging()"
       [class.upload-zone--active]="!document()"
       (click)="openFilePicker()"
@@ -30,9 +30,9 @@
       (dragleave)="onDragLeave($event)"
       (drop)="onDrop($event)"
     >
-      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.12),transparent_55%)]"></div>
+      <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(75,73,172,0.18),transparent_58%)]"></div>
       <span
-        class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-[rgba(99,102,241,0.28)] bg-[rgba(99,102,241,0.16)] text-[var(--accent)]"
+        class="relative flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] border border-[rgba(75,73,172,0.34)] bg-[rgba(75,73,172,0.1)] text-[var(--accent)]"
       >
         <mat-icon>upload_file</mat-icon>
       </span>
@@ -46,7 +46,7 @@
   }
 
   @if (uploadStatus() === "loading") {
-    <div class="mt-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] px-4 py-3">
+    <div class="mt-4 rounded-2xl border border-[var(--border)] bg-[rgba(255,255,255,0.96)] px-4 py-3 shadow-[0_10px_26px_rgba(75,73,172,0.06)]">
       <div class="mb-2 flex items-center justify-between text-sm text-[var(--text-secondary)]">
         <span>Uploading document</span>
         <span>{{ uploadProgress() }}%</span>
@@ -56,20 +56,20 @@
   }
 
   @if (effectiveError()) {
-    <p class="mt-3 rounded-2xl border border-[rgba(239,68,68,0.2)] bg-[rgba(239,68,68,0.08)] px-4 py-3 text-sm text-[var(--error)]">
+    <p class="mt-3 rounded-2xl border border-[rgba(243,121,126,0.22)] bg-[rgba(243,121,126,0.1)] px-4 py-3 text-sm text-[var(--error)]">
       {{ effectiveError() }}
     </p>
   }
 
   @if (document(); as document) {
     <div class="mt-4 flex-1 space-y-4">
-      <section class="rounded-[18px] border border-[var(--border)] bg-[var(--bg-card)] p-3 shadow-[0_8px_20px_rgba(49,45,35,0.08)]">
+      <section class="rounded-[18px] border border-[rgba(75,73,172,0.24)] bg-[#4B49AC] p-3 shadow-[0_12px_28px_rgba(75,73,172,0.16)]">
         <div class="flex items-start justify-between gap-4">
           <div class="flex min-w-0 items-start gap-3">
             <button
               type="button"
               aria-label="Replace document"
-              class="document-icon group/icon flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[10px] border border-[rgba(16,185,129,0.28)] bg-[rgba(16,185,129,0.12)] text-[var(--success)] transition"
+              class="document-icon group/icon flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[10px] border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.12)] text-white transition"
               (click)="openFilePicker()"
             >
               <mat-icon class="icon-default">description</mat-icon>
@@ -77,12 +77,12 @@
             </button>
             <div class="min-w-0">
               <p
-                class="max-w-full truncate text-sm font-semibold text-[var(--text-primary)]"
+                class="max-w-full truncate text-sm font-semibold text-white"
                 [attr.title]="document.fileName"
               >
                 {{ document.fileName }}
               </p>
-              <p class="mt-1 text-xs text-[var(--text-secondary)]">
+              <p class="mt-1 text-xs text-[rgba(255,255,255,0.78)]">
                 {{ formatBytes(document.fileSize) }} · {{ document.pageCount }} pages
               </p>
             </div>
@@ -93,7 +93,7 @@
               mat-icon-button
               type="button"
               aria-label="Remove document"
-              class="!text-[var(--text-secondary)]"
+              class="!text-white/80 hover:!text-white"
               (click)="removeDocument()"
             >
               <mat-icon>close</mat-icon>

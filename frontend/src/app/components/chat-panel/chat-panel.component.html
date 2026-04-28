@@ -1,13 +1,14 @@
 <section
-  class="relative flex h-full min-h-0 flex-col overflow-hidden bg-[rgba(255,253,250,0.92)] backdrop-blur-xl"
+  class="relative flex h-full min-h-0 flex-col overflow-hidden bg-[rgba(255,255,255,0.9)]"
 >
   @if (showEmptyState()) {
     <div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
       <div
-        class="mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] border border-[rgba(129,140,248,0.2)] bg-[rgba(99,102,241,0.12)] text-[var(--accent-light)] shadow-[0_20px_50px_rgba(99,102,241,0.18)]"
+        class="mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] border border-[rgba(75,73,172,0.16)] bg-[rgba(152,189,255,0.22)] text-[var(--accent)] shadow-[0_18px_42px_rgba(75,73,172,0.12)]"
       >
         <mat-icon class="!h-10 !w-10 !text-[40px]">chat</mat-icon>
       </div>
+      <p class="mb-3 text-sm font-semibold tracking-[0.04em] text-[var(--accent)]">DocChat</p>
       <h2 class="text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
         Chat with your documents
       </h2>
@@ -18,7 +19,7 @@
 
       <div class="mt-10 grid w-full max-w-[920px] gap-4 md:grid-cols-3">
         <article class="feature-card">
-          <div class="feature-icon bg-[rgba(99,102,241,0.12)] text-[var(--accent-light)]">
+          <div class="feature-icon bg-[rgba(152,189,255,0.24)] text-[var(--accent)]">
             <mat-icon>bolt</mat-icon>
           </div>
           <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">Instant answers</h3>
@@ -28,7 +29,7 @@
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon bg-[rgba(16,185,129,0.12)] text-[var(--success)]">
+          <div class="feature-icon bg-[rgba(125,160,250,0.2)] text-[var(--accent-secondary)]">
             <mat-icon>article</mat-icon>
           </div>
           <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">Source-aware</h3>
@@ -38,7 +39,7 @@
         </article>
 
         <article class="feature-card">
-          <div class="feature-icon bg-[rgba(245,158,11,0.12)] text-[var(--warning)]">
+          <div class="feature-icon bg-[rgba(121,120,233,0.14)] text-[var(--warning)]">
             <mat-icon>auto_awesome</mat-icon>
           </div>
           <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">
@@ -54,7 +55,7 @@
     <div class="flex h-full flex-1 flex-col">
       @if (sessionExpired()) {
         <div
-          class="mx-4 mt-4 flex flex-col gap-3 rounded-[24px] border border-[rgba(245,158,11,0.24)] bg-[rgba(245,158,11,0.1)] px-4 py-4 text-sm text-[var(--warning)] sm:flex-row sm:items-center sm:justify-between"
+          class="mx-4 mt-4 flex flex-col gap-3 rounded-[24px] border border-[rgba(121,120,233,0.2)] bg-[rgba(121,120,233,0.08)] px-4 py-4 text-sm text-[var(--warning)] sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
             <p class="font-semibold text-[var(--text-primary)]">Session expired</p>
@@ -92,7 +93,7 @@
       </div>
 
       @if (activeTab() === "summary") {
-        <div class="flex min-h-0 flex-1 flex-col overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
+        <div class="tab-connected-pane flex min-h-0 flex-1 flex-col overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
           <div class="w-full max-w-[920px]">
             <div class="mb-6">
               <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
@@ -103,14 +104,20 @@
               </h3>
             </div>
 
+            @if (document()?.summary?.overview) {
+              <p class="mb-5 max-w-[820px] text-base leading-8 text-[var(--text-primary)]">
+                {{ document()?.summary?.overview }}
+              </p>
+            }
+
             <div class="space-y-0">
-              @for (bullet of document()?.summary || []; track bullet; let index = $index) {
+              @for (bullet of document()?.summary?.bullets || []; track bullet; let index = $index) {
                 <div
                   class="summary-card opacity-0 px-0 py-1"
                   [style.animationDelay.ms]="index * 150"
                 >
                   <div class="flex items-start gap-3">
-                    <span class="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[var(--accent)]"></span>
+                     <span class="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[var(--accent)]"></span>
                     <p class="text-base leading-8 text-[var(--text-secondary)]">{{ bullet }}</p>
                   </div>
                 </div>
@@ -119,7 +126,7 @@
           </div>
         </div>
       } @else if (showQuestionCards()) {
-        <div class="flex min-h-0 flex-1 flex-col justify-center rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
+        <div class="tab-connected-pane flex min-h-0 flex-1 flex-col justify-center rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
           <div class="mx-auto w-full max-w-[920px]">
             <h3 class="text-2xl font-semibold text-[var(--text-primary)]">Start with a focused prompt</h3>
             <p class="mt-2 text-sm text-[var(--text-secondary)]">
@@ -160,7 +167,7 @@
           </div>
         </div>
       } @else {
-        <div #scrollViewport class="min-h-0 flex-1 space-y-5 overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-4 py-6 sm:px-6">
+        <div #scrollViewport class="tab-connected-pane min-h-0 flex-1 space-y-5 overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
           @for (message of messages(); track message.id) {
             <div
               class="flex"
@@ -187,20 +194,40 @@
                         <span class="loading-dot animation-delay-200"></span>
                       </div>
                     } @else {
-                      <p
-                        class="break-words"
-                        [ngClass]="{
-                          'whitespace-pre-wrap': message.role === 'user',
-                          'whitespace-pre-line': message.role === 'assistant'
-                        }"
-                      >
-                        {{ message.role === "assistant" ? formatAssistantContent(message.content) : message.content }}
-                        @if (isAssistantStreaming(message)) {
-                          <span
-                            class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent-light)] align-middle animate-cursor"
-                          ></span>
-                        }
-                      </p>
+                      @if (message.role === "assistant") {
+                        <div class="assistant-content">
+                          @for (block of parseAssistantContent(message.content); track $index) {
+                            @if (block.type === "paragraph") {
+                              <p class="assistant-paragraph break-words">
+                                {{ block.items[0] }}
+                              </p>
+                            } @else {
+                              <ul class="assistant-list">
+                                @for (item of block.items; track item) {
+                                  <li class="assistant-list-item">
+                                    <span class="assistant-list-bullet"></span>
+                                    <span>{{ item }}</span>
+                                  </li>
+                                }
+                              </ul>
+                            }
+                          }
+                          @if (isAssistantStreaming(message)) {
+                            <span
+                                class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent)] align-middle animate-cursor"
+                            ></span>
+                          }
+                        </div>
+                      } @else {
+                        <p class="break-words whitespace-pre-wrap">
+                          {{ message.content }}
+                          @if (isAssistantStreaming(message)) {
+                            <span
+                                class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent)] align-middle animate-cursor"
+                            ></span>
+                          }
+                        </p>
+                      }
                     }
 
                     @if (message.status === "error" && message.retryQuestion) {
@@ -239,9 +266,9 @@
       }
 
       @if (activeTab() === "chat") {
-        <div class="flex-shrink-0 bg-[rgba(248,248,246,0.92)] py-2">
+        <div class="flex-shrink-0 bg-[rgba(245,247,255,0.94)] py-2">
           <form
-            class="rounded-[16px] border border-[var(--border)] bg-[var(--bg-card)] px-3 py-2 shadow-[0_8px_20px_rgba(49,45,35,0.08)]"
+            class="rounded-[16px] border border-[var(--border)] bg-[rgba(255,255,255,0.96)] px-3 py-2 shadow-[0_10px_24px_rgba(75,73,172,0.08)]"
             [formGroup]="questionForm"
             (submit)="$event.preventDefault(); sendCurrentQuestion()"
           >
@@ -279,7 +306,7 @@
                 <button
                   mat-stroked-button
                   type="button"
-                  class="composer-stop-button !border-[rgba(239,68,68,0.28)] !text-[var(--error)]"
+                  class="composer-stop-button !border-[rgba(243,121,126,0.24)] !text-[var(--error)]"
                   (click)="stopStreaming()"
                 >
                   Stop generating

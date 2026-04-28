@@ -1,3 +1,8 @@
+export interface DocumentSummary {
+  overview: string;
+  bullets: string[];
+}
+
 export interface UploadResponse {
   sessionId: string;
   fileName?: string;
@@ -11,7 +16,7 @@ export interface UploadResponse {
   };
   excerpt: string;
   starterQuestions: string[];
-  summary: string[];
+  summary: DocumentSummary;
 }
 
 export interface DocumentSession {
@@ -22,7 +27,7 @@ export interface DocumentSession {
   uploadedAt: string;
   excerpt: string;
   starterQuestions: string[];
-  summary: string[];
+  summary: DocumentSummary;
   objectUrl: string;
 }
 

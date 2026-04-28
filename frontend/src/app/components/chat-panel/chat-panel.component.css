@@ -2,8 +2,8 @@
 .question-card {
   border: 1px solid var(--border);
   background:
-    linear-gradient(180deg, rgba(255, 253, 250, 0.98), rgba(248, 248, 246, 0.98)),
-    radial-gradient(circle at top right, rgba(99, 102, 241, 0.1), transparent 35%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 247, 255, 0.98)),
+    radial-gradient(circle at top right, rgba(152, 189, 255, 0.18), transparent 38%);
   border-radius: 18px;
   padding: 0.9rem 1rem;
   transition:
@@ -15,17 +15,17 @@
 .feature-card:hover,
 .question-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(129, 140, 248, 0.35);
-  box-shadow: 0 18px 34px rgba(49, 45, 35, 0.12);
+  border-color: rgba(121, 120, 233, 0.32);
+  box-shadow: 0 18px 34px rgba(75, 73, 172, 0.1);
 }
 
 .browser-tab-strip {
   display: flex;
   align-items: flex-end;
   gap: 0.35rem;
-  background: #f8f8f6;
-  border-bottom: 1px solid rgba(221, 216, 204, 0.9);
-  padding-bottom: 0;
+  background: #eef2ff;
+  border-bottom: 1px solid rgba(217, 226, 255, 1);
+  padding: 0.4rem 0 0;
 }
 
 .browser-tab {
@@ -33,28 +33,44 @@
   align-items: center;
   gap: 0.45rem;
   min-width: 7rem;
-  border: 1px solid rgba(221, 216, 204, 0.9);
+  border: 1px solid rgba(186, 198, 240, 0.96);
   border-bottom: none;
-  border-top-left-radius: 0.9rem;
-  border-top-right-radius: 0.9rem;
-  background: rgba(238, 236, 229, 0.95);
+  border-top-left-radius: 0.8rem;
+  border-top-right-radius: 0.8rem;
+  background: rgba(240, 243, 255, 0.98);
   color: var(--text-secondary);
-  padding: 0.5rem 0.9rem 0.45rem;
+  padding: 0.45rem 0.85rem 0.42rem;
   margin-bottom: -1px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
   transition:
     background-color 140ms ease-out,
     color 140ms ease-out,
-    transform 140ms ease-out;
+    transform 140ms ease-out,
+    border-color 140ms ease-out,
+    box-shadow 140ms ease-out;
 }
 
 .browser-tab:hover {
-  background: rgba(244, 242, 236, 1);
+  background: rgba(233, 238, 255, 1);
+  border-color: rgba(161, 175, 227, 0.98);
   color: var(--text-primary);
 }
 
 .browser-tab--active {
-  background: rgba(255, 253, 250, 1);
-  color: var(--text-primary);
+  background: rgba(75, 73, 172, 1);
+  border-color: rgba(75, 73, 172, 1);
+  color: #ffffff;
+  box-shadow: 0 10px 18px rgba(75, 73, 172, 0.16);
+}
+
+.tab-connected-pane {
+  border-color: rgba(75, 73, 172, 0.26);
+  background:
+    linear-gradient(180deg, rgba(75, 73, 172, 0.08) 0, rgba(255, 255, 255, 0.9) 68px),
+    rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 rgba(75, 73, 172, 0.18),
+    inset 1px 0 0 rgba(75, 73, 172, 0.04);
 }
 
 .browser-tab-dot {
@@ -62,8 +78,13 @@
   width: 0.5rem;
   flex-shrink: 0;
   border-radius: 999px;
-  background: rgba(99, 102, 241, 0.85);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  background: rgba(75, 73, 172, 0.9);
+  box-shadow: 0 0 0 3px rgba(152, 189, 255, 0.2);
+}
+
+.browser-tab--active .browser-tab-dot {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14);
 }
 
 .feature-icon,
@@ -81,8 +102,13 @@
 }
 
 .question-icon {
-  background: rgba(99, 102, 241, 0.12);
-  color: var(--accent-light);
+  background: rgba(75, 73, 172, 0.1);
+  color: var(--accent);
+}
+
+.question-card:hover .question-icon,
+.question-card:focus-visible .question-icon {
+  background: rgba(75, 73, 172, 0.16);
 }
 
 .question-icon .mat-icon {
@@ -123,6 +149,19 @@
   font-size: 0.95rem !important;
 }
 
+.composer-submit-button {
+  background: var(--accent) !important;
+  color: #ffffff !important;
+}
+
+.composer-submit-button:hover:not(:disabled) {
+  background: #433f9d !important;
+}
+
+.composer-submit-button .mat-icon {
+  color: #ffffff !important;
+}
+
 .message-user {
   max-width: 100%;
   text-align: right;
@@ -133,7 +172,7 @@
   max-width: min(100%, 720px);
   padding: 0.7rem 1rem;
   border-radius: 1rem;
-  background: rgba(241, 240, 234, 0.95);
+  background: rgba(237, 242, 255, 0.96);
 }
 
 .message-assistant {
@@ -142,6 +181,44 @@
 
 .message-assistant p {
   margin: 0;
+}
+
+.assistant-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.assistant-paragraph {
+  margin: 0;
+}
+
+.assistant-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.assistant-list-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0;
+  padding-left: 0;
+}
+
+.assistant-list-item + .assistant-list-item {
+  margin-top: 0.35rem;
+}
+
+.assistant-list-bullet {
+  margin-top: 0.7rem;
+  height: 0.35rem;
+  width: 0.35rem;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: rgba(75, 73, 172, 0.95);
+  box-shadow: 0 0 0 3px rgba(152, 189, 255, 0.18);
 }
 
 .message-actions {
@@ -167,7 +244,7 @@
   border: none;
   border-radius: 999px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--accent);
   transition: color 140ms ease-out, background-color 140ms ease-out;
 }
 
@@ -178,7 +255,7 @@
 }
 
 .message-action-button:hover {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(75, 73, 172, 0.08);
   color: var(--accent);
 }
 
@@ -186,7 +263,7 @@
   height: 0.5rem;
   width: 0.5rem;
   border-radius: 999px;
-  background: var(--accent-light);
+  background: var(--accent-secondary);
   animation: pulseDot 900ms infinite ease-in-out;
 }
 
@@ -206,7 +283,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  background: rgba(31, 31, 26, 0.18);
+  background: rgba(75, 73, 172, 0.14);
   backdrop-filter: blur(4px);
 }
 
@@ -214,10 +291,10 @@
   width: min(100%, 680px);
   max-height: min(78vh, 720px);
   overflow: hidden;
-  border: 1px solid rgba(221, 216, 204, 0.9);
+  border: 1px solid rgba(217, 226, 255, 0.96);
   border-radius: 1.15rem;
-  background: rgba(255, 253, 250, 0.98);
-  box-shadow: 0 22px 55px rgba(49, 45, 35, 0.16);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 55px rgba(75, 73, 172, 0.12);
   padding: 1.15rem;
 }
 
@@ -234,22 +311,22 @@
   width: 2.25rem;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(221, 216, 204, 0.9);
+  border: 1px solid rgba(217, 226, 255, 0.92);
   border-radius: 999px;
-  background: rgba(248, 248, 246, 1);
+  background: rgba(245, 247, 255, 1);
   color: var(--text-secondary);
 }
 
 .source-modal-card {
-  border: 1px solid rgba(221, 216, 204, 0.9);
+  border: 1px solid rgba(217, 226, 255, 0.92);
   border-radius: 1rem;
-  background: rgba(248, 248, 246, 0.95);
+  background: rgba(245, 247, 255, 0.96);
   padding: 0.95rem 1rem;
 }
 
 .source-modal-quote {
   margin: 0;
-  border-left: 2px solid rgba(99, 102, 241, 0.28);
+  border-left: 2px solid rgba(75, 73, 172, 0.26);
   padding-left: 0.85rem;
   color: var(--text-secondary);
   font-size: 0.8rem;

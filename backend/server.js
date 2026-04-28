@@ -219,7 +219,7 @@ app.post("/api/chat", async (req, res) => {
 
   const systemPrompt =
     "You are a document assistant. Answer ONLY from the provided document context. If the answer isn't in the context, say so clearly. Be concise and precise.";
-  const context = topChunks.map((chunk) => `[${chunk.label}]\n${chunk.text}`).join("\n\n");
+  const context = topChunks.map((chunk) => `[${chunk.label}]\n${chunk.text}`).join("\n");
 
   try {
     const stream = await groq.chat.completions.create({
@@ -440,22 +440,38 @@ async function generateDocumentSummary(excerpt) {
         {
           role: "user",
           content: [
-            "Summarize this document in exactly 3 bullet points. Each bullet should be one clear sentence. Return only the 3 bullets, no intro text.",
+            "Summarize this document clearly and accurately for a professional reader.",
+            "Focus on the main purpose, key points, and any important outcomes or requirements.",
+            "Return strict JSON with two properties:",
+            '- "overview": a short overview paragraph in 2 to 3 sentences.',
+            '- "bullets": an array of 3 to 5 concise bullet points covering the most important details.',
+            "Do not invent information. Use only the provided document text.",
             excerpt
           ].join("\n\n")
         }
       ],
       temperature: 0.3,
-      max_tokens: 220
+      max_tokens: 320,
+      response_format: {
+        type: "json_object"
+      }
     });
-    const content = completion.choices?.[0]?.message?.content || "";
-    const bullets = content
-      .split("\n")
-      .map((line) => line.replace(/^\s*[-*•]\s*/, "").trim())
-      .filter(Boolean)
-      .slice(0, 3);
+    const payload = JSON.parse(
+      completion.choices?.[0]?.message?.content || '{"overview":"","bullets":[]}'
+    );
+    const overview =
+      typeof payload.overview === "string" ? payload.overview.replace(/\s+/g, " ").trim() : "";
+    const bullets = Array.isArray(payload.bullets)
+      ? payload.bullets
+          .filter((item) => typeof item === "string")
+          .map((item) => item.replace(/^\s*[-*•]\s*/, "").trim())
+          .filter(Boolean)
+          .slice(0, 5)
+      : [];
 
-    return bullets.length === 3 ? bullets : fallbackDocumentSummary(excerpt);
+    return overview && bullets.length >= 3
+      ? { overview, bullets }
+      : fallbackDocumentSummary(excerpt);
   } catch (_error) {
     return fallbackDocumentSummary(excerpt);
   }
@@ -482,13 +498,19 @@ function fallbackDocumentSummary(excerpt) {
     .split(/[.?!]/)
     .map((sentence) => sentence.trim())
     .filter(Boolean)
-    .slice(0, 3);
+    .slice(0, 5);
 
-  while (sentences.length < 3) {
-    sentences.push("This document contains additional details that can be explored in chat.");
+  const overview = sentences.slice(0, 2).join(". ").replace(/\s+/g, " ").trim();
+  const bullets = sentences.slice(0, 4);
+
+  while (bullets.length < 3) {
+    bullets.push("This document contains additional details that can be explored in chat");
   }
 
-  return sentences.map((sentence) => `${sentence.replace(/\s+/g, " ").trim()}.`);
+  return {
+    overview: overview ? `${overview}.` : "This document contains key details that can be explored in chat.",
+    bullets: bullets.map((sentence) => `${sentence.replace(/\s+/g, " ").trim()}.`)
+  };
 }
 
 function sendEvent(response, event, payload) {

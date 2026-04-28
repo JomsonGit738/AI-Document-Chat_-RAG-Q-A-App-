@@ -1,16 +1,16 @@
 .upload-zone {
-  border-color: rgba(99, 102, 241, 0.52);
+  border-color: rgba(75, 73, 172, 0.5);
   box-shadow:
-    inset 0 0 0 1px rgba(99, 102, 241, 0.12),
-    0 1px 0 rgba(255, 255, 255, 0.65);
+    inset 0 0 0 1px rgba(75, 73, 172, 0.1),
+    0 10px 22px rgba(75, 73, 172, 0.07);
 }
 
 .upload-zone--active:hover,
 .upload-zone--dragging {
-  border-color: rgba(129, 140, 248, 0.75);
+  border-color: rgba(75, 73, 172, 0.82);
   box-shadow:
-    0 0 0 1px rgba(99, 102, 241, 0.28),
-    0 0 32px rgba(99, 102, 241, 0.16);
+    0 0 0 1px rgba(75, 73, 172, 0.28),
+    0 0 30px rgba(75, 73, 172, 0.14);
 }
 
 .upload-zone--active:hover {
@@ -23,11 +23,23 @@
 
 .chip-lift:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24);
+  box-shadow: 0 12px 28px rgba(75, 73, 172, 0.14);
 }
 
 .document-icon {
   position: relative;
+  transition:
+    background-color 160ms ease-out,
+    border-color 160ms ease-out,
+    color 160ms ease-out,
+    box-shadow 160ms ease-out;
+}
+
+.document-icon:hover {
+  border-color: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.96);
+  color: #4b49ac;
+  box-shadow: 0 10px 20px rgba(28, 26, 88, 0.18);
 }
 
 .document-icon .icon-default,
@@ -65,12 +77,12 @@
 @keyframes pulseBorder {
   0%,
   100% {
-    box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.16);
+    box-shadow: 0 0 0 1px rgba(75, 73, 172, 0.2);
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(99, 102, 241, 0.38),
-      0 0 28px rgba(99, 102, 241, 0.18);
+      0 0 0 1px rgba(75, 73, 172, 0.4),
+      0 0 28px rgba(75, 73, 172, 0.16);
   }
 }
 
