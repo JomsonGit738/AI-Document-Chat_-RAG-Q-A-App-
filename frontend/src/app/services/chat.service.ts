@@ -226,15 +226,43 @@ function parseSseEvent(
   const eventLine = lines.find((line) => line.startsWith("event:"));
   const dataLines = lines.filter((line) => line.startsWith("data:"));
 
-  if (!eventLine || !dataLines.length) {
+  if (!dataLines.length) {
     return null;
   }
 
-  const type = eventLine.replace("event:", "").trim();
   const data = dataLines.map((line) => line.replace("data:", "").trim()).join("");
+  const payload = JSON.parse(data) as SseEventPayload;
+  const type =
+    eventLine?.replace("event:", "").trim() ||
+    payload.type ||
+    inferSseType(payload);
+
+  if (!type) {
+    return null;
+  }
 
   return {
     type,
-    payload: JSON.parse(data) as SseEventPayload
+    payload
   };
+}
+
+function inferSseType(payload: SseEventPayload): string | null {
+  if (payload.sources) {
+    return "sources";
+  }
+
+  if (payload.error) {
+    return "error";
+  }
+
+  if (payload.complete) {
+    return "done";
+  }
+
+  if (typeof payload.content === "string") {
+    return "chunk";
+  }
+
+  return null;
 }

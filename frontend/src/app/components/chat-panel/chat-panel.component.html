@@ -3,15 +3,10 @@
 >
   @if (showEmptyState()) {
     <div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
-      <div
-        class="mb-6 flex h-20 w-20 items-center justify-center rounded-[28px] border border-[rgba(75,73,172,0.16)] bg-[rgba(152,189,255,0.22)] text-[var(--accent)] shadow-[0_18px_42px_rgba(75,73,172,0.12)]"
-      >
-        <mat-icon class="!h-10 !w-10 !text-[40px]">chat</mat-icon>
-      </div>
-      <p class="mb-3 text-sm font-semibold tracking-[0.04em] text-[var(--accent)]">DocChat</p>
-      <h2 class="text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+      <h1 class="mb-3 text-3xl font-bold tracking-tight text-[var(--accent)] sm:text-4xl">DocChat</h1>
+      <p class="text-lg font-medium tracking-tight text-[var(--text-primary)] sm:text-xl">
         Chat with your documents
-      </h2>
+      </p>
       <p class="mt-3 max-w-[540px] text-base leading-7 text-[var(--text-secondary)]">
         Upload a PDF to start asking questions. DocChat retrieves the strongest context,
         streams the answer, and shows which document chunks informed the response.
@@ -96,12 +91,18 @@
         <div class="tab-connected-pane flex min-h-0 flex-1 flex-col overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
           <div class="w-full max-w-[920px]">
             <div class="mb-6">
-              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--text-muted)]">
+              <p class="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
                 Document Summary
               </p>
-              <h3 class="mt-2 text-2xl font-semibold text-[var(--text-primary)]">
-                Quick overview of the uploaded document
-              </h3>
+              <div class="mt-3">
+                <span
+                  class="inline-flex max-w-full items-center gap-2 rounded-full border border-[rgba(75,73,172,0.16)] bg-[rgba(75,73,172,0.08)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]"
+                  [attr.title]="document()?.fileName"
+                >
+                  <mat-icon class="!h-4 !w-4 !text-[16px]">description</mat-icon>
+                  <span class="truncate">{{ document()?.fileName }}</span>
+                </span>
+              </div>
             </div>
 
             @if (document()?.summary?.overview) {
@@ -258,6 +259,20 @@
                       </button>
                     </div>
                   }
+
+                  @if (message.role === "assistant" && message.sources?.length) {
+                    <div class="sources-section">
+                      @for (source of message.sources; track source.chunkIndex) {
+                        <p class="source-inline-line">
+                          <span class="source-inline-chunk">Chunk #{{ source.chunkIndex }}</span>
+                          <span class="source-inline-separator"> — </span>
+                          <span class="source-inline-excerpt">"{{ source.excerpt }}"</span>
+                          <span class="source-inline-separator"> — </span>
+                          <span class="source-inline-page">Page {{ source.pageNumber }}</span>
+                        </p>
+                      }
+                    </div>
+                  }
                 </div>
               </div>
             </div>
@@ -268,7 +283,7 @@
       @if (activeTab() === "chat") {
         <div class="flex-shrink-0 bg-[rgba(245,247,255,0.94)] py-2">
           <form
-            class="rounded-[16px] border border-[var(--border)] bg-[rgba(255,255,255,0.96)] px-3 py-2 shadow-[0_10px_24px_rgba(75,73,172,0.08)]"
+            class="chat-composer-shell rounded-[18px] border-2 border-[var(--border)] bg-[rgba(255,255,255,0.98)] px-3 py-2.5"
             [formGroup]="questionForm"
             (submit)="$event.preventDefault(); sendCurrentQuestion()"
           >
@@ -279,8 +294,7 @@
               formControlName="question"
               maxlength="500"
               rows="1"
-              class="min-h-[48px] w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
-              class="chat-composer-textarea min-h-[48px] w-full resize-none bg-transparent px-1.5 py-1.5 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              class="chat-composer-textarea min-h-[50px] w-full resize-none bg-transparent px-2 py-2 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
               placeholder="Ask a specific question about this document..."
               (keydown)="onComposerKeydown($event)"
             ></textarea>
@@ -289,16 +303,6 @@
               class="mt-2 flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between"
             >
               <div class="flex items-center gap-1.5">
-                @if (latestAssistantMessageWithSources()) {
-                  <button
-                    type="button"
-                    aria-label="View source chunks"
-                    class="message-action-button"
-                    (click)="openLatestSourcesModal()"
-                  >
-                    <mat-icon>article</mat-icon>
-                  </button>
-                }
                 <p class="text-xs text-[var(--text-muted)]">{{ currentCharacterCount }}/500</p>
               </div>
 
@@ -315,61 +319,17 @@
                 <button
                   mat-flat-button
                   type="submit"
-                  class="composer-submit-button"
+                  class="composer-submit-button composer-submit-button--icon"
+                  aria-label="Send message"
                   [disabled]="questionControl.invalid || !questionControl.value.trim()"
                 >
-                  <span class="inline-flex items-center gap-1.5">
-                    <mat-icon>arrow_upward</mat-icon>
-                    Send
-                  </span>
+                  <mat-icon>north_east</mat-icon>
                 </button>
               }
             </div>
           </form>
         </div>
       }
-    </div>
-  }
-
-  @if (sourceModal(); as modal) {
-    <div class="source-modal-overlay" (click)="closeSourcesModal()">
-      <div
-        class="source-modal"
-        (click)="$event.stopPropagation()"
-      >
-        <div class="source-modal-header">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-muted)]">
-              Source Chunks
-            </p>
-            <h3 class="mt-1 text-lg font-semibold text-[var(--text-primary)]">
-              Context used for this response
-            </h3>
-          </div>
-
-          <button
-            type="button"
-            aria-label="Close source modal"
-            class="source-modal-close"
-            (click)="closeSourcesModal()"
-          >
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-
-        <div class="mt-5 space-y-3 overflow-y-auto">
-          @for (source of modal.sources; track source.chunkIndex) {
-            <div class="source-modal-card">
-              <p class="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--accent)]">
-                Chunk #{{ source.chunkIndex }}
-              </p>
-              <blockquote class="source-modal-quote">
-                {{ source.excerpt }}
-              </blockquote>
-            </div>
-          }
-        </div>
-      </div>
     </div>
   }
 </section>

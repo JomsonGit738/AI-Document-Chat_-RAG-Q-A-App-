@@ -117,8 +117,22 @@ app.post("/api/upload", (req, res) => {
     }
 
     try {
-      const parsed = await pdf(req.file.buffer);
-      const rawText = normalizeWhitespace(parsed.text);
+      const pageTexts = [];
+      const parsed = await pdf(req.file.buffer, {
+        pagerender: async (pageData) => {
+          const textContent = await pageData.getTextContent({
+            normalizeWhitespace: true,
+            disableCombineTextItems: false
+          });
+          const pageText = normalizeWhitespace(
+            textContent.items.map((item) => item.str || "").join(" ")
+          );
+
+          pageTexts.push(pageText);
+          return pageText;
+        }
+      });
+      const rawText = normalizeWhitespace(pageTexts.filter(Boolean).join(" "));
 
       if (!rawText) {
         res.status(400).json({
@@ -128,11 +142,12 @@ app.post("/api/upload", (req, res) => {
       }
 
       const sessionId = crypto.randomUUID();
-      const chunks = splitIntoChunks(rawText, 500, 50).map((text, index) => ({
+      const chunks = buildPageAwareChunks(pageTexts, 500, 50).map((chunk, index) => ({
         id: index + 1,
         label: `Chunk ${index + 1}`,
-        text,
-        vector: buildTermFrequency(text)
+        text: chunk.text,
+        pageNumber: chunk.pageNumber,
+        vector: buildTermFrequency(chunk.text)
       }));
       const excerpt = rawText.slice(0, 200);
       const summary = await generateDocumentSummary(rawText.slice(0, 3000));
@@ -205,7 +220,8 @@ app.post("/api/chat", async (req, res) => {
   const topChunks = rankChunks(question, session.chunks).slice(0, 3);
   const sourceMetadata = topChunks.map((chunk) => ({
     chunkIndex: chunk.id,
-    excerpt: truncate(chunk.text, 120)
+    excerpt: truncate(chunk.text, 80),
+    pageNumber: chunk.pageNumber
   }));
 
   if (!groq) {
@@ -222,6 +238,17 @@ app.post("/api/chat", async (req, res) => {
   const context = topChunks.map((chunk) => `[${chunk.label}]\n${chunk.text}`).join("\n");
 
   try {
+    console.log("=== RAG Chunk Selection ===");
+    console.log("Question:", question);
+    console.log(
+      "Selected chunks:",
+      topChunks.map((chunk, i) => ({
+        index: i,
+        preview: chunk.text.substring(0, 100) + "..."
+      }))
+    );
+    console.log("===========================");
+
     const stream = await groq.chat.completions.create({
       model: MODEL,
       messages: [
@@ -316,6 +343,29 @@ function splitIntoChunks(text, chunkSize, overlap) {
 
     start = Math.max(end - overlap, start + 1);
   }
+
+  return chunks;
+}
+
+function buildPageAwareChunks(pageTexts, chunkSize, overlap) {
+  const chunks = [];
+
+  pageTexts.forEach((pageText, pageIndex) => {
+    const normalizedPageText = normalizeWhitespace(pageText || "");
+
+    if (!normalizedPageText) {
+      return;
+    }
+
+    const pageChunks = splitIntoChunks(normalizedPageText, chunkSize, overlap);
+
+    for (const text of pageChunks) {
+      chunks.push({
+        text,
+        pageNumber: pageIndex + 1
+      });
+    }
+  });
 
   return chunks;
 }
@@ -523,7 +573,13 @@ function truncate(value, maxLength) {
     return value;
   }
 
-  return `${value.slice(0, maxLength).trim()}...`;
+  const sliced = value.slice(0, maxLength + 1);
+  const boundaryIndex = sliced.lastIndexOf(" ");
+  const safeSlice = (boundaryIndex > 0 ? sliced.slice(0, boundaryIndex) : value.slice(0, maxLength))
+    .trim()
+    .replace(/[.,;:!?-]+$/g, "");
+
+  return `${safeSlice}...`;
 }
 
 function resolveGroqErrorMessage(error, model) {

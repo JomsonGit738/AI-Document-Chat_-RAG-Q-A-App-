@@ -20,7 +20,7 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ChatMessage, MessageSource } from "../../models/docchat.models";
+import { ChatMessage } from "../../models/docchat.models";
 import { ChatService } from "../../services/chat.service";
 import { DocumentService } from "../../services/document.service";
 
@@ -87,30 +87,12 @@ export class ChatPanelComponent {
 
     return Array.from(new Set([...generated, ...fallback])).slice(0, 4);
   });
-  protected readonly latestAssistantMessageWithSources = computed(() => {
-    const messages = this.messages();
-
-    for (let index = messages.length - 1; index >= 0; index -= 1) {
-      const message = messages[index];
-
-      if (message.role === "assistant" && message.sources?.length) {
-        return message;
-      }
-    }
-
-    return null;
-  });
-
   protected readonly questionForm = new FormGroup({
     question: new FormControl("", {
       nonNullable: true,
       validators: [Validators.required, Validators.maxLength(500)]
     })
   });
-  protected readonly sourceModal = signal<{
-    messageId: string;
-    sources: MessageSource[];
-  } | null>(null);
   protected readonly copiedMessageId = signal<string | null>(null);
 
   @ViewChild("scrollViewport")
@@ -123,14 +105,12 @@ export class ChatPanelComponent {
 
       if (!sessionId) {
         this.activeTab.set("chat");
-        this.sourceModal.set(null);
         this.previousSessionId = null;
         return;
       }
 
       if (this.previousSessionId !== sessionId) {
         this.activeTab.set("summary");
-        this.sourceModal.set(null);
       }
 
       this.previousSessionId = sessionId;
@@ -232,34 +212,10 @@ export class ChatPanelComponent {
     this.documentService.removeCurrentDocument();
     this.documentService.clearSessionExpiredBanner();
     this.chatService.clearConversation();
-    this.sourceModal.set(null);
   }
 
   protected isAssistantStreaming(message: ChatMessage): boolean {
     return this.activeAssistantId() === message.id && this.isStreaming() && message.role === "assistant";
-  }
-
-  protected openSourcesModal(message: ChatMessage): void {
-    if (!message.sources?.length) {
-      return;
-    }
-
-    this.sourceModal.set({
-      messageId: message.id,
-      sources: message.sources
-    });
-  }
-
-  protected closeSourcesModal(): void {
-    this.sourceModal.set(null);
-  }
-
-  protected openLatestSourcesModal(): void {
-    const message = this.latestAssistantMessageWithSources();
-
-    if (message) {
-      this.openSourcesModal(message);
-    }
   }
 
   protected async copyMessage(message: ChatMessage): Promise<void> {

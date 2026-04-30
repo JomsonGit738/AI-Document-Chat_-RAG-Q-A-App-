@@ -34,6 +34,7 @@ export interface DocumentSession {
 export interface MessageSource {
   chunkIndex: number;
   excerpt: string;
+  pageNumber: number;
 }
 
 export type MessageRole = "user" | "assistant";
@@ -51,6 +52,7 @@ export interface ChatMessage {
 }
 
 export interface SseEventPayload {
+  type?: string;
   content?: string;
   sources?: MessageSource[];
   error?: string;

@@ -215,6 +215,17 @@ export class UploadPanelComponent {
 
     this.localError.set(null);
 
+    const currentDocument = this.document();
+
+    if (
+      currentDocument &&
+      currentDocument.fileName === file.name &&
+      currentDocument.fileSize === file.size
+    ) {
+      this.localError.set("This PDF is already uploaded.");
+      return;
+    }
+
     if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
       this.localError.set("Only PDF files are supported.");
       return;
