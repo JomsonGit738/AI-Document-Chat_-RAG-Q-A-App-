@@ -1,7 +1,199 @@
-.grid-overlay {
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.workspace-shell {
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.workspace-grain {
   background-image:
-    linear-gradient(rgba(152, 189, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(152, 189, 255, 0.08) 1px, transparent 1px);
-  background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), transparent);
+    radial-gradient(circle at top left, rgba(164, 142, 92, 0.08), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(55, 95, 72, 0.08), transparent 22%);
+  opacity: 0.9;
+}
+
+.workspace-lines {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-border) 60%, transparent) 12%,
+    color-mix(in srgb, var(--color-border) 72%, transparent) 88%,
+    transparent 100%
+  );
+}
+
+.workspace-frame {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-5);
+  gap: var(--space-5);
+  overflow: hidden;
+}
+
+.workspace-frame--condensed {
+  gap: 0;
+}
+
+.workspace-header-shell {
+  position: relative;
+  min-height: 0;
+}
+
+.workspace-header-shell--condensed {
+  overflow: hidden;
+}
+
+.workspace-header-track {
+  position: relative;
+  max-height: 14rem;
+  overflow: hidden;
+  transition:
+    max-height var(--motion-slow) var(--ease-emphasis),
+    opacity var(--motion-base) var(--ease-productive),
+    transform var(--motion-slow) var(--ease-emphasis);
+}
+
+.workspace-header-track--condensed {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-1rem);
+}
+
+.workspace-header {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) 0;
+  animation: shellReveal var(--motion-slow) var(--ease-emphasis) both;
+}
+
+.workspace-kicker {
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.workspace-title-group {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.workspace-title {
+  font-size: clamp(2.75rem, 4vw, 4.75rem);
+  font-weight: 600;
+  line-height: 0.92;
+}
+
+.workspace-subtitle {
+  color: var(--text-secondary);
+  font-size: var(--text-step-1);
+  line-height: var(--leading-roomy);
+}
+
+.workspace-main {
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(18rem, 24rem) minmax(0, 1fr);
+  gap: var(--space-5);
+  overflow: hidden;
+}
+
+.workspace-rail,
+.workspace-stage {
+  min-height: 0;
+  position: relative;
+}
+
+.workspace-rail {
+  display: flex;
+  animation: shellReveal var(--motion-slow) var(--ease-emphasis) 80ms both;
+  overflow: hidden;
+}
+
+.workspace-rail::before {
+  content: "";
+  position: absolute;
+  inset: -1rem 1.5rem -1rem -1rem;
+  border: 1px solid color-mix(in srgb, var(--color-border) 72%, transparent);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+}
+
+.workspace-stage {
+  display: flex;
+  min-width: 0;
+  padding-left: var(--space-4);
+  animation: shellReveal var(--motion-slow) var(--ease-emphasis) 140ms both;
+  overflow: hidden;
+}
+
+.workspace-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-border-strong) 40%, transparent) 10%,
+    color-mix(in srgb, var(--color-border-strong) 54%, transparent) 90%,
+    transparent 100%
+  );
+}
+
+@media (max-width: 1023px) {
+  .workspace-frame {
+    padding: var(--space-4);
+  }
+
+  .workspace-main {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-stage {
+    padding-left: 0;
+  }
+
+  .workspace-stage::before,
+  .workspace-rail::before {
+    display: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .workspace-header {
+    padding-inline: 0;
+  }
+
+  .workspace-title {
+    font-size: clamp(2.3rem, 10vw, 3.4rem);
+  }
+
+  .workspace-subtitle {
+    font-size: var(--text-step-0);
+  }
+}
+
+@keyframes shellReveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

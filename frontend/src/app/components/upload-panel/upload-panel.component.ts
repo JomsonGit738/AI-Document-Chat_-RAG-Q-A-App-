@@ -58,6 +58,9 @@ export class UploadPanelComponent {
   });
   protected readonly toastMessage = toSignal(this.documentService.toast$, { initialValue: null });
   protected readonly isDragging = signal(false);
+  protected readonly showWorkspaceHeader = computed(
+    () => this.documentCount() > 0 || !!this.uploadTarget()
+  );
 
   @Output()
   readonly questionSelected = new EventEmitter<string>();

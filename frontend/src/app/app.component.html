@@ -1,17 +1,37 @@
-<div class="h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+<div class="workspace-shell text-[var(--text-primary)]">
   <div class="pointer-events-none fixed inset-0 overflow-hidden">
-    <div class="grid-overlay absolute inset-0 opacity-40"></div>
+    <div class="workspace-grain absolute inset-0"></div>
+    <div class="workspace-lines absolute inset-y-0 left-[min(8vw,7rem)] hidden w-px lg:block"></div>
+    <div class="workspace-lines absolute inset-y-0 right-[min(8vw,7rem)] hidden w-px lg:block"></div>
   </div>
 
-  <div class="relative mx-auto flex h-full max-w-[1600px] flex-col px-2 pb-4 pt-4 sm:px-3 lg:px-4">
-    <main class="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
-      <app-upload-panel
-        class="block min-h-0 w-full lg:max-w-[340px] lg:flex-shrink-0"
-        (questionSelected)="handleSuggestedQuestion($event)"
-        (documentCleared)="handleDocumentCleared()"
-      />
+  <div class="workspace-frame" [class.workspace-frame--condensed]="isHeaderCollapsible()">
+    <div class="workspace-header-shell" [class.workspace-header-shell--condensed]="isHeaderCollapsible()">
+      <div class="workspace-header-track" [class.workspace-header-track--condensed]="isHeaderCollapsible()">
+        <header class="workspace-header">
+          <div class="workspace-kicker">Research Console</div>
+          <div class="workspace-title-group">
+            <h1 class="workspace-title">DocChat</h1>
+            <p class="workspace-subtitle">
+              A document reading room for source-grounded summaries, questions, and citation-aware answers.
+            </p>
+          </div>
+        </header>
+      </div>
+    </div>
 
-      <app-chat-panel class="block min-h-0 flex-1" />
+    <main class="workspace-main">
+      <section class="workspace-rail">
+        <app-upload-panel
+          class="block min-h-0 w-full"
+          (questionSelected)="handleSuggestedQuestion($event)"
+          (documentCleared)="handleDocumentCleared()"
+        />
+      </section>
+
+      <section class="workspace-stage">
+        <app-chat-panel class="block min-h-0 flex-1" />
+      </section>
     </main>
   </div>
 </div>

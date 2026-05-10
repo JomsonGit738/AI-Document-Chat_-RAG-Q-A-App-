@@ -1,106 +1,95 @@
-<section
-  class="relative flex h-full min-h-0 flex-col overflow-hidden bg-[rgba(255,255,255,0.9)]"
->
+<section class="reading-panel">
   @if (showEmptyState()) {
-    <div class="flex flex-1 flex-col items-center justify-center px-6 py-12 text-center sm:px-10">
-      <h1 class="mb-3 text-3xl font-bold tracking-tight text-[var(--accent)] sm:text-4xl">DocChat</h1>
-      <p class="text-lg font-medium tracking-tight text-[var(--text-primary)] sm:text-xl">
-        Chat with your documents
-      </p>
-      <p class="mt-3 max-w-[540px] text-base leading-7 text-[var(--text-secondary)]">
+    <div class="reading-empty-state">
+      <div class="reading-empty-state__eyebrow">Reading Room</div>
+      <h1 class="reading-empty-state__title">Chat with your documents</h1>
+      <p class="reading-empty-state__copy measure-copy">
         Upload a PDF to start asking questions. DocChat retrieves the strongest context,
         streams the answer, and shows which document chunks informed the response.
       </p>
 
-      <div class="mt-10 grid w-full max-w-[920px] gap-4 md:grid-cols-3">
-        <article class="feature-card">
-          <div class="feature-icon bg-[rgba(152,189,255,0.24)] text-[var(--accent)]">
+      <div class="reading-empty-state__features">
+        <article class="feature-note" data-motion="lift">
+          <div class="feature-note__icon">
             <mat-icon>bolt</mat-icon>
           </div>
-          <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">Instant answers</h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          <h3 class="feature-note__title">Instant answers</h3>
+          <p class="feature-note__copy">
             Ingest a PDF once and move straight into low-latency Q&amp;A with streamed output.
           </p>
         </article>
 
-        <article class="feature-card">
-          <div class="feature-icon bg-[rgba(125,160,250,0.2)] text-[var(--accent-secondary)]">
+        <article class="feature-note" data-motion="lift">
+          <div class="feature-note__icon">
             <mat-icon>article</mat-icon>
           </div>
-          <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">Source-aware</h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          <h3 class="feature-note__title">Source-aware</h3>
+          <p class="feature-note__copy">
             Retrieval ranks the most relevant chunks and reveals them beneath each answer.
           </p>
         </article>
 
-        <article class="feature-card">
-          <div class="feature-icon bg-[rgba(121,120,233,0.14)] text-[var(--warning)]">
+        <article class="feature-note" data-motion="lift">
+          <div class="feature-note__icon">
             <mat-icon>auto_awesome</mat-icon>
           </div>
-          <h3 class="mt-4 text-lg font-semibold text-[var(--text-primary)]">
-            Streaming responses
-          </h3>
-          <p class="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+          <h3 class="feature-note__title">Streaming responses</h3>
+          <p class="feature-note__copy">
             Token-by-token output keeps the interface responsive and enterprise-feeling.
           </p>
         </article>
       </div>
     </div>
   } @else {
-    <div class="flex h-full flex-1 flex-col">
+    <div class="reading-body">
       @if (sessionExpired()) {
-        <div
-          class="mx-4 mt-4 flex flex-col gap-3 rounded-[24px] border border-[rgba(121,120,233,0.2)] bg-[rgba(121,120,233,0.08)] px-4 py-4 text-sm text-[var(--warning)] sm:flex-row sm:items-center sm:justify-between"
-        >
+        <div class="session-banner">
           <div>
-            <p class="font-semibold text-[var(--text-primary)]">Session expired</p>
-            <p class="mt-1 text-[var(--text-secondary)]">
+            <p class="session-banner__title">Session expired</p>
+            <p class="session-banner__copy">
               The backend no longer has these documents in memory. Re-upload to continue.
             </p>
           </div>
-          <button mat-flat-button type="button" class="!rounded-full" (click)="clearExpiredSession()">
+          <button mat-flat-button type="button" class="session-banner__button" (click)="clearExpiredSession()">
             Re-upload documents
           </button>
         </div>
       }
 
-      <div>
-        <div class="browser-tab-strip">
+      <div class="reading-toolbar">
+        <div class="reading-tabs">
           <button
             type="button"
-            class="browser-tab text-xs"
-            [class.browser-tab--active]="activeTab() === 'summary'"
+            class="reading-tab"
+            [class.reading-tab--active]="activeTab() === 'summary'"
             (click)="selectTab('summary')"
           >
-            <span class="browser-tab-dot"></span>
+            <span class="reading-tab__index">01</span>
             Summary
           </button>
           <button
             type="button"
-            class="browser-tab text-xs"
-            [class.browser-tab--active]="activeTab() === 'chat'"
+            class="reading-tab"
+            [class.reading-tab--active]="activeTab() === 'chat'"
             (click)="selectTab('chat')"
           >
-            <span class="browser-tab-dot"></span>
+            <span class="reading-tab__index">02</span>
             Chat
           </button>
         </div>
       </div>
 
       @if (activeTab() === "summary") {
-          <div class="tab-connected-pane flex min-h-0 flex-1 flex-col overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
-            <div class="w-full max-w-[920px]">
-              <div class="mb-6">
-                <p class="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">
+          <div class="reading-stage reading-stage--summary">
+            <div class="reading-stage__inner">
+              <div class="summary-header">
+                <p class="summary-header__title">
                   {{ document()?.isCombined ? "Workspace Summary" : "Document Summary" }}
                 </p>
-                <div class="mt-3 flex flex-wrap gap-2">
+                <div class="summary-header__chips">
                   @for (doc of document()?.documents || []; track doc.sessionId) {
-                    <span
-                      class="inline-flex max-w-full items-center gap-2 rounded-full border border-[rgba(75,73,172,0.16)] bg-[rgba(75,73,172,0.08)] px-3 py-1.5 text-xs font-medium text-[var(--accent)]"
-                      [attr.title]="doc.fileName"
-                    >
-                      <mat-icon class="!h-4 !w-4 !text-[16px]">description</mat-icon>
+                    <span class="summary-chip" [attr.title]="doc.fileName">
+                      <mat-icon class="summary-chip__icon">description</mat-icon>
                       <span class="truncate">{{ doc.fileName }}</span>
                     </span>
                   }
@@ -108,29 +97,24 @@
               </div>
 
               @for (doc of document()?.documents || []; track doc.sessionId; let docIndex = $index) {
-                <section [class.mb-10]="docIndex < (document()?.documents?.length || 0) - 1">
+                <section class="summary-section" [class.mb-10]="docIndex < (document()?.documents?.length || 0) - 1">
                   @if (document()?.isCombined) {
-                    <p class="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+                    <p class="summary-section__label">
                       {{ doc.fileName }}
                     </p>
                   }
 
                   @if (doc.summary.overview) {
-                    <p class="mb-5 max-w-[820px] text-base leading-8 text-[var(--text-primary)]">
+                    <p class="summary-section__overview measure-copy">
                       {{ doc.summary.overview }}
                     </p>
                   }
 
-                  <div class="space-y-0">
+                  <div class="summary-points">
                     @for (bullet of doc.summary.bullets; track bullet; let index = $index) {
-                      <div
-                        class="summary-card opacity-0 px-0 py-1"
-                        [style.animationDelay.ms]="index * 150"
-                      >
-                        <div class="flex items-start gap-3">
-                          <span class="mt-2 h-2.5 w-2.5 flex-shrink-0 rounded-full bg-[var(--accent)]"></span>
-                          <p class="text-base leading-8 text-[var(--text-secondary)]">{{ bullet }}</p>
-                        </div>
+                      <div class="summary-card opacity-0" [style.animationDelay.ms]="index * 150">
+                        <span class="summary-card__marker"></span>
+                        <p class="summary-card__copy measure-copy">{{ bullet }}</p>
                       </div>
                     }
                   </div>
@@ -139,22 +123,19 @@
             </div>
           </div>
       } @else if (showQuestionCards()) {
-        <div class="tab-connected-pane flex min-h-0 flex-1 flex-col justify-center rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
-          <div class="mx-auto w-full max-w-[920px]">
-            <h3 class="text-2xl font-semibold text-[var(--text-primary)]">Start with a focused prompt</h3>
-            <p class="mt-2 text-sm text-[var(--text-secondary)]">
+        <div class="reading-stage reading-stage--questions">
+          <div class="reading-stage__inner">
+            <h3 class="question-board__title">Start with a focused prompt</h3>
+            <p class="question-board__copy">
               These prompts are tuned for quick comprehension, summaries, and action extraction.
             </p>
 
-            <div class="mt-6 grid gap-4 md:grid-cols-2">
+            <div class="question-board">
               @for (question of exampleQuestions(); track question; let index = $index) {
-                <button
-                  type="button"
-                  class="question-card text-left"
-                  (click)="submitSuggestedQuestion(question)"
-                >
-                  <div class="flex items-start justify-between gap-4">
-                    <div class="flex items-center gap-3">
+                <button type="button" class="question-card" data-motion="lift" (click)="submitSuggestedQuestion(question)">
+                  <div class="question-card__head">
+                    <div class="question-card__meta">
+                      <span class="question-card__index">0{{ index + 1 }}</span>
                       <span class="question-icon">
                         <mat-icon>
                           {{
@@ -164,46 +145,44 @@
                                 ? "event"
                                 : index === 2
                                   ? "policy"
-                                  : "task_alt"
+                                : "task_alt"
                           }}
                         </mat-icon>
                       </span>
-                      <p class="question-card-text font-medium text-[var(--text-primary)]">
-                        {{ question }}
-                      </p>
                     </div>
-                    <mat-icon class="!text-[20px] text-[var(--text-muted)]">arrow_outward</mat-icon>
+                    <mat-icon class="question-card__arrow">arrow_outward</mat-icon>
                   </div>
+                  <p class="question-card-text">{{ question }}</p>
                 </button>
               }
             </div>
           </div>
         </div>
       } @else {
-        <div #scrollViewport class="tab-connected-pane min-h-0 flex-1 space-y-5 overflow-y-auto rounded-bl-[16px] border-b border-l border-[var(--border)] px-6 py-6 sm:px-8">
+        <div #scrollViewport class="reading-stage reading-stage--chat">
           @for (message of messages(); track message.id) {
             <div
-              class="flex"
-              [class.justify-end]="message.role === 'user'"
-              [class.justify-start]="message.role === 'assistant'"
+              class="message-row"
+              [class.message-row--user]="message.role === 'user'"
+              [class.message-row--assistant]="message.role === 'assistant'"
               [@messageEnter]
             >
               <div
-                class="flex max-w-[min(100%,820px)]"
-                [class.justify-end]="message.role === 'user'"
-                [class.justify-center]="message.role === 'system'"
+                class="message-frame"
+                [class.message-frame--user]="message.role === 'user'"
+                [class.message-frame--system]="message.role === 'system'"
               >
                 <div class="group relative min-w-0">
                   <div
-                    class="message-surface px-0 py-1 text-base leading-8"
+                    class="message-surface"
                     [ngClass]="{
-                      'message-user text-[var(--text-primary)]': message.role === 'user',
-                      'message-assistant text-[var(--text-primary)]': message.role === 'assistant',
-                      'rounded-full border border-[rgba(75,73,172,0.14)] bg-[rgba(75,73,172,0.08)] px-4 py-2 text-sm leading-6 text-[var(--text-secondary)]': message.role === 'system'
+                      'message-user': message.role === 'user',
+                      'message-assistant': message.role === 'assistant',
+                      'message-system': message.role === 'system'
                     }"
                   >
                     @if (message.status === "loading" && !message.content) {
-                      <div class="flex items-center gap-1.5 py-2">
+                      <div class="message-loading">
                         <span class="loading-dot"></span>
                         <span class="loading-dot animation-delay-100"></span>
                         <span class="loading-dot animation-delay-200"></span>
@@ -228,9 +207,7 @@
                             }
                           }
                           @if (isAssistantStreaming(message)) {
-                            <span
-                                class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent)] align-middle animate-cursor"
-                            ></span>
+                            <span class="message-caret"></span>
                           }
                         </div>
                       } @else if (message.role === "system") {
@@ -239,9 +216,7 @@
                         <p class="break-words whitespace-pre-wrap">
                           {{ message.content }}
                           @if (isAssistantStreaming(message)) {
-                            <span
-                                class="ml-1 inline-block h-4 w-2 rounded-sm bg-[var(--accent)] align-middle animate-cursor"
-                            ></span>
+                            <span class="message-caret"></span>
                           }
                         </p>
                       }
@@ -276,21 +251,21 @@
                     </div>
                   }
 
-                  @if (message.role === "assistant" && message.sources?.length) {
-                    <div class="sources-section">
-                      @for (source of message.sources; track trackSource($index, source)) {
-                        <p class="source-inline-line">
-                          <span class="source-inline-chunk">Chunk #{{ source.chunkIndex }}</span>
-                          <span class="source-inline-separator"> — </span>
-                          <span class="source-inline-excerpt">"{{ source.excerpt }}"</span>
-                          <span class="source-inline-separator"> — </span>
-                          <span class="source-inline-page">Page {{ source.pageNumber }}</span>
-                          <span class="source-inline-separator"> — </span>
-                          <span class="source-inline-page">{{ source.fileName }}</span>
-                        </p>
-                      }
-                    </div>
-                  }
+                    @if (message.role === "assistant" && message.sources?.length) {
+                      <div class="sources-section">
+                        @for (source of message.sources; track trackSource($index, source)) {
+                          <div class="source-inline-line">
+                            <span class="source-inline-chunk">Chunk #{{ source.chunkIndex }}</span>
+                            <p class="source-inline-excerpt">"{{ source.excerpt }}"</p>
+                            <div class="source-inline-meta">
+                              <span class="source-inline-page">Page {{ source.pageNumber }}</span>
+                              <span class="source-inline-separator">·</span>
+                              <span class="source-inline-page">{{ source.fileName }}</span>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
                 </div>
               </div>
             </div>
@@ -299,9 +274,9 @@
       }
 
       @if (activeTab() === "chat") {
-        <div class="flex-shrink-0 bg-[rgba(245,247,255,0.94)] py-2">
+        <div class="composer-wrap">
           <form
-            class="chat-composer-shell rounded-[18px] border-2 border-[var(--border)] bg-[rgba(255,255,255,0.98)] px-3 py-2.5"
+            class="chat-composer-shell"
             [formGroup]="questionForm"
             (submit)="$event.preventDefault(); sendCurrentQuestion()"
           >
@@ -312,23 +287,21 @@
               formControlName="question"
               maxlength="500"
               rows="1"
-              class="chat-composer-textarea min-h-[50px] w-full resize-none bg-transparent px-2 py-2 text-sm leading-7 text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
+              class="chat-composer-textarea"
               placeholder="Ask a specific question about your document set..."
               (keydown)="onComposerKeydown($event)"
             ></textarea>
 
-            <div
-              class="mt-2 flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div class="flex items-center gap-1.5">
-                <p class="text-xs text-[var(--text-muted)]">{{ currentCharacterCount }}/500</p>
+            <div class="composer-meta">
+              <div class="composer-meta__left">
+                <p class="composer-meta__count">{{ currentCharacterCount }}/500</p>
               </div>
 
               @if (isStreaming()) {
                 <button
                   mat-stroked-button
                   type="button"
-                  class="composer-stop-button !border-[rgba(243,121,126,0.24)] !text-[var(--error)]"
+                  class="composer-stop-button"
                   (click)="stopStreaming()"
                 >
                   Stop generating
