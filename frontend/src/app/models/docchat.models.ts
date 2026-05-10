@@ -3,6 +3,16 @@ export interface DocumentSummary {
   bullets: string[];
 }
 
+export interface DocumentInfo {
+  sessionId: string;
+  fileName: string;
+  fileSize: number;
+  pageCount: number;
+  uploadedAt: string;
+  summary: DocumentSummary;
+  starterQuestions: string[];
+}
+
 export interface UploadResponse {
   sessionId: string;
   fileName?: string;
@@ -20,24 +30,32 @@ export interface UploadResponse {
 }
 
 export interface DocumentSession {
-  sessionId: string;
-  fileName: string;
-  fileSize: number;
-  pageCount: number;
-  uploadedAt: string;
-  excerpt: string;
-  starterQuestions: string[];
-  summary: DocumentSummary;
-  objectUrl: string;
+  sessionIds: string[];
+  activeSessionId: string;
+  documents: DocumentInfo[];
+  isCombined: boolean;
 }
 
 export interface MessageSource {
   chunkIndex: number;
   excerpt: string;
   pageNumber: number;
+  fileName: string;
 }
 
-export type MessageRole = "user" | "assistant";
+export interface CombinedSessionResponse {
+  combinedSessionId: string;
+  documentCount: number;
+  totalChunks: number;
+}
+
+export interface UploadProgressInfo {
+  fileName: string;
+  fileSize: number;
+  progress: number;
+}
+
+export type MessageRole = "user" | "assistant" | "system";
 export type MessageStatus = "loading" | "streaming" | "complete" | "error";
 export type AsyncStatus = "idle" | "loading" | "success" | "error";
 

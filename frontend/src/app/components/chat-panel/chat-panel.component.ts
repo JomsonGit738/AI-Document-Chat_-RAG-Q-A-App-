@@ -20,7 +20,8 @@ import { MatChipsModule } from "@angular/material/chips";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { ChatMessage } from "../../models/docchat.models";
+import { openDocchatToast } from "../toast-snackbar/toast-snackbar.component";
+import { ChatMessage, MessageSource } from "../../models/docchat.models";
 import { ChatService } from "../../services/chat.service";
 import { DocumentService } from "../../services/document.service";
 
@@ -77,7 +78,8 @@ export class ChatPanelComponent {
   );
   protected readonly exampleQuestions = computed(() => {
     const document = this.document();
-    const generated = document?.starterQuestions ?? [];
+    const generated =
+      document?.documents.flatMap((item) => item.starterQuestions).filter(Boolean) ?? [];
     const fallback = [
       "Summarize the executive highlights in this document.",
       "Which deadlines, milestones, or dates matter most?",
@@ -97,23 +99,39 @@ export class ChatPanelComponent {
 
   @ViewChild("scrollViewport")
   private scrollViewport?: ElementRef<HTMLDivElement>;
-  private previousSessionId: string | null = null;
+  private previousDocumentIds = "";
 
   constructor() {
     effect(() => {
-      const sessionId = this.document()?.sessionId ?? null;
+      const document = this.document();
+      const documentIds = document?.sessionIds.join("|") || "";
 
-      if (!sessionId) {
+      if (!documentIds) {
         this.activeTab.set("chat");
-        this.previousSessionId = null;
+        this.previousDocumentIds = "";
         return;
       }
 
-      if (this.previousSessionId !== sessionId) {
+      if (this.previousDocumentIds && this.previousDocumentIds !== documentIds) {
+        const previousDocumentIds = new Set(this.previousDocumentIds.split("|").filter(Boolean));
+        const addedDocument = document?.documents.find(
+          (item) => !previousDocumentIds.has(item.sessionId)
+        );
+
+        this.chatService.clearConversation();
+
+        if (addedDocument && document) {
+          this.chatService.addSystemMessage(
+            `New document added: ${addedDocument.fileName} — now chatting across ${document.documents.length} documents`
+          );
+        }
+      }
+
+      if (this.previousDocumentIds !== documentIds) {
         this.activeTab.set("summary");
       }
 
-      this.previousSessionId = sessionId;
+      this.previousDocumentIds = documentIds;
     }, { allowSignalWrites: true });
 
     effect(() => {
@@ -142,12 +160,7 @@ export class ChatPanelComponent {
         return;
       }
 
-      this.snackBar.open(toast, "Dismiss", {
-        duration: 4000,
-        horizontalPosition: "end",
-        verticalPosition: "bottom",
-        panelClass: "docchat-snackbar"
-      });
+      openDocchatToast(this.snackBar, toast);
       this.chatService.dismissToast();
     }, { allowSignalWrites: true });
   }
@@ -180,7 +193,7 @@ export class ChatPanelComponent {
     }
 
     this.questionForm.reset({ question: "" });
-    await this.chatService.sendMessage(value, session.sessionId);
+    await this.chatService.sendMessage(value, session.activeSessionId);
   }
 
   protected onComposerKeydown(event: KeyboardEvent): void {
@@ -205,13 +218,17 @@ export class ChatPanelComponent {
       return;
     }
 
-    await this.chatService.retryQuestion(question, session.sessionId);
+    await this.chatService.retryQuestion(question, session.activeSessionId);
   }
 
   protected clearExpiredSession(): void {
     this.documentService.removeCurrentDocument();
     this.documentService.clearSessionExpiredBanner();
     this.chatService.clearConversation();
+  }
+
+  protected trackSource(index: number, source: MessageSource): string {
+    return `${source.fileName}:${source.pageNumber}:${source.chunkIndex}:${index}`;
   }
 
   protected isAssistantStreaming(message: ChatMessage): boolean {

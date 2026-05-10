@@ -3,10 +3,8 @@ import {
   Component,
   ElementRef,
   EventEmitter,
-  Injector,
   Output,
   ViewChild,
-  afterNextRender,
   computed,
   effect,
   inject,
@@ -20,28 +18,11 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { openDocchatToast } from "../toast-snackbar/toast-snackbar.component";
 import { DocumentService } from "../../services/document.service";
 
-interface PdfPageLike {
-  getViewport(options: { scale: number }): { width: number; height: number };
-  render(options: {
-    canvasContext: CanvasRenderingContext2D;
-    viewport: { width: number; height: number };
-  }): { promise: Promise<void> };
-}
-
-interface PdfDocumentLike {
-  getPage(pageNumber: number): Promise<PdfPageLike>;
-}
-
-interface PdfLoadingTaskLike {
-  promise: Promise<PdfDocumentLike>;
-}
-
-interface PdfJsLike {
-  GlobalWorkerOptions: { workerSrc: string };
-  getDocument(source: string): PdfLoadingTaskLike;
-}
+const MAX_DOCUMENTS = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 @Component({
   selector: "app-upload-panel",
@@ -62,26 +43,21 @@ interface PdfJsLike {
 export class UploadPanelComponent {
   private readonly documentService = inject(DocumentService);
   private readonly snackBar = inject(MatSnackBar);
-  private readonly injector = inject(Injector);
 
   protected readonly document = toSignal(this.documentService.document$, { initialValue: null });
+  protected readonly documents = computed(() => this.document()?.documents || []);
+  protected readonly documentCount = computed(() => this.documents().length);
   protected readonly uploadStatus = toSignal(this.documentService.uploadStatus$, {
     initialValue: "idle"
   });
   protected readonly uploadProgress = toSignal(this.documentService.uploadProgress$, {
     initialValue: 0
   });
-  protected readonly uploadError = toSignal(this.documentService.uploadError$, {
+  protected readonly uploadTarget = toSignal(this.documentService.uploadTarget$, {
     initialValue: null
   });
   protected readonly toastMessage = toSignal(this.documentService.toast$, { initialValue: null });
   protected readonly isDragging = signal(false);
-  protected readonly previewReady = signal(false);
-  protected readonly previewError = signal<string | null>(null);
-  protected readonly localError = signal<string | null>(null);
-  protected readonly effectiveError = computed(() => this.localError() || this.uploadError());
-
-  private renderVersion = 0;
 
   @Output()
   readonly questionSelected = new EventEmitter<string>();
@@ -92,9 +68,6 @@ export class UploadPanelComponent {
   @ViewChild("fileInput")
   private fileInput?: ElementRef<HTMLInputElement>;
 
-  @ViewChild("previewCanvas")
-  private previewCanvas?: ElementRef<HTMLCanvasElement>;
-
   constructor() {
     effect(() => {
       const toast = this.toastMessage();
@@ -103,37 +76,13 @@ export class UploadPanelComponent {
         return;
       }
 
-      this.snackBar.open(toast, "Dismiss", {
-        duration: 4000,
-        horizontalPosition: "end",
-        verticalPosition: "bottom",
-        panelClass: "docchat-snackbar"
-      });
+      openDocchatToast(this.snackBar, toast);
       this.documentService.dismissToast();
-    }, { allowSignalWrites: true });
-
-    effect(() => {
-      const document = this.document();
-      this.previewReady.set(false);
-      this.previewError.set(null);
-      this.renderVersion += 1;
-      const currentVersion = this.renderVersion;
-
-      if (!document?.objectUrl) {
-        return;
-      }
-
-      afterNextRender(
-        () => {
-          void this.renderPreview(document.objectUrl, currentVersion);
-        },
-        { injector: this.injector }
-      );
     }, { allowSignalWrites: true });
   }
 
   protected openFilePicker(): void {
-    if (this.uploadStatus() === "loading") {
+    if (this.uploadStatus() === "loading" || this.documentCount() >= MAX_DOCUMENTS) {
       return;
     }
 
@@ -147,7 +96,7 @@ export class UploadPanelComponent {
   }
 
   protected onDragOver(event: DragEvent): void {
-    if (this.uploadStatus() === "loading") {
+    if (this.uploadStatus() === "loading" || this.documentCount() >= MAX_DOCUMENTS) {
       return;
     }
 
@@ -156,7 +105,7 @@ export class UploadPanelComponent {
   }
 
   protected onDragLeave(event: DragEvent): void {
-    if (this.uploadStatus() === "loading") {
+    if (this.uploadStatus() === "loading" || this.documentCount() >= MAX_DOCUMENTS) {
       return;
     }
 
@@ -165,7 +114,7 @@ export class UploadPanelComponent {
   }
 
   protected onDrop(event: DragEvent): void {
-    if (this.uploadStatus() === "loading") {
+    if (this.uploadStatus() === "loading" || this.documentCount() >= MAX_DOCUMENTS) {
       return;
     }
 
@@ -174,11 +123,13 @@ export class UploadPanelComponent {
     this.handleFiles(event.dataTransfer?.files || null);
   }
 
-  protected removeDocument(): void {
-    this.documentService.removeCurrentDocument();
-    this.localError.set(null);
-    this.previewError.set(null);
-    this.documentCleared.emit();
+  protected removeDocument(sessionId: string): void {
+    const isLastDocument = this.documents().length === 1;
+    this.documentService.removeDocument(sessionId);
+
+    if (isLastDocument) {
+      this.documentCleared.emit();
+    }
   }
 
   protected emitSuggestedQuestion(question: string): void {
@@ -203,73 +154,62 @@ export class UploadPanelComponent {
   }
 
   private handleFiles(fileList: FileList | null): void {
-    if (this.uploadStatus() === "loading") {
+    if (!fileList?.length) {
       return;
     }
 
-    const file = fileList?.item(0);
+    const currentDocuments = this.documents();
+    const availableSlots = MAX_DOCUMENTS - currentDocuments.length;
 
-    if (!file) {
+    if (availableSlots <= 0) {
+      this.documentService.showToast(`You can upload up to ${MAX_DOCUMENTS} documents at a time.`);
       return;
     }
 
-    this.localError.set(null);
+    const files = Array.from(fileList);
+    const selectedKeys = new Set<string>();
+    const existingKeys = new Set(
+      currentDocuments.map((document) => `${document.fileName}:${document.fileSize}`)
+    );
+    const validFiles: File[] = [];
+    const messages: string[] = [];
 
-    const currentDocument = this.document();
+    for (const file of files) {
+      const fileKey = `${file.name}:${file.size}`;
 
-    if (
-      currentDocument &&
-      currentDocument.fileName === file.name &&
-      currentDocument.fileSize === file.size
-    ) {
-      this.localError.set("This PDF is already uploaded.");
-      return;
-    }
-
-    if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
-      this.localError.set("Only PDF files are supported.");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      this.localError.set("File too large. Maximum size is 10MB.");
-      return;
-    }
-
-    this.documentService.queueUpload(file);
-  }
-
-  private async renderPreview(objectUrl: string, version: number): Promise<void> {
-    try {
-      const canvas = this.previewCanvas?.nativeElement;
-
-      if (!canvas || version !== this.renderVersion) {
-        return;
+      if (!file.name.toLowerCase().endsWith(".pdf") && file.type !== "application/pdf") {
+        messages.push(`Skipped ${file.name}: only PDF files are supported.`);
+        continue;
       }
 
-      const pdfjs = (await import("pdfjs-dist")) as unknown as PdfJsLike;
-      pdfjs.GlobalWorkerOptions.workerSrc =
-        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.6.82/pdf.worker.min.mjs";
-      const loadedPdf = await pdfjs.getDocument(objectUrl).promise;
-      const page = await loadedPdf.getPage(1);
-      const viewport = page.getViewport({ scale: 0.46 });
-      const context = canvas.getContext("2d");
-
-      if (!context || version !== this.renderVersion) {
-        return;
+      if (file.size > MAX_FILE_SIZE) {
+        messages.push(`Skipped ${file.name}: file too large. Maximum size is 10MB.`);
+        continue;
       }
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({ canvasContext: context, viewport }).promise;
+      if (existingKeys.has(fileKey) || selectedKeys.has(fileKey)) {
+        messages.push(`Skipped ${file.name}: this PDF is already uploaded.`);
+        continue;
+      }
 
-      if (version === this.renderVersion) {
-        this.previewReady.set(true);
+      if (validFiles.length >= availableSlots) {
+        messages.push(`Only ${availableSlots} more document${availableSlots === 1 ? "" : "s"} can be added right now.`);
+        break;
       }
-    } catch (_error) {
-      if (version === this.renderVersion) {
-        this.previewError.set("Preview unavailable for this PDF.");
-      }
+
+      selectedKeys.add(fileKey);
+      validFiles.push(file);
     }
+
+    if (!validFiles.length) {
+      this.documentService.showToast(messages[0] || "No valid PDF files were selected.");
+      return;
+    }
+
+    if (messages.length) {
+      this.documentService.showToast(messages[0]);
+    }
+
+    validFiles.forEach((file) => this.documentService.queueUpload(file));
   }
 }

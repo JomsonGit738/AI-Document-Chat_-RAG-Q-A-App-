@@ -22,6 +22,7 @@ const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
   : null;
 
+const MAX_DOCUMENTS_PER_SESSION = 5;
 const sessions = new Map();
 
 app.use(
@@ -142,12 +143,15 @@ app.post("/api/upload", (req, res) => {
       }
 
       const sessionId = crypto.randomUUID();
+      const uploadedAt = new Date().toISOString();
       const chunks = buildPageAwareChunks(pageTexts, 500, 50).map((chunk, index) => ({
         id: index + 1,
         label: `Chunk ${index + 1}`,
         text: chunk.text,
         pageNumber: chunk.pageNumber,
-        vector: buildTermFrequency(chunk.text)
+        vector: buildTermFrequency(chunk.text),
+        fileName: req.file.originalname,
+        originalSessionId: sessionId
       }));
       const excerpt = rawText.slice(0, 200);
       const summary = await generateDocumentSummary(rawText.slice(0, 3000));
@@ -158,7 +162,7 @@ app.post("/api/upload", (req, res) => {
         fileName: req.file.originalname,
         fileSize: req.file.size,
         pageCount: parsed.numpages || 0,
-        uploadedAt: new Date().toISOString(),
+        uploadedAt,
         rawText,
         chunks
       });
@@ -172,7 +176,7 @@ app.post("/api/upload", (req, res) => {
           fileName: req.file.originalname,
           fileSize: req.file.size,
           pageCount: parsed.numpages || 0,
-          uploadedAt: new Date().toISOString()
+          uploadedAt
         },
         excerpt,
         starterQuestions,
@@ -183,6 +187,84 @@ app.post("/api/upload", (req, res) => {
         error: "Unable to read this PDF. Please upload a text-based PDF document."
       });
     }
+  });
+});
+
+app.post("/api/session/combine", (req, res) => {
+  const { sessionIds } = req.body || {};
+
+  if (!Array.isArray(sessionIds) || !sessionIds.length) {
+    res.status(400).json({
+      error: "sessionIds must be a non-empty array."
+    });
+    return;
+  }
+
+  if (sessionIds.length > MAX_DOCUMENTS_PER_SESSION) {
+    res.status(400).json({
+      error: `You can combine up to ${MAX_DOCUMENTS_PER_SESSION} documents at a time.`
+    });
+    return;
+  }
+
+  const uniqueSessionIds = Array.from(
+    new Set(sessionIds.filter((sessionId) => typeof sessionId === "string" && sessionId.trim()))
+  );
+
+  if (!uniqueSessionIds.length) {
+    res.status(400).json({
+      error: "sessionIds must contain valid session ids."
+    });
+    return;
+  }
+
+  const sourceSessions = [];
+
+  for (const sessionId of uniqueSessionIds) {
+    const session = sessions.get(sessionId);
+
+    if (!session || session.isCombined) {
+      res.status(404).json({
+        error: `Session not found: ${sessionId}`
+      });
+      return;
+    }
+
+    sourceSessions.push(session);
+  }
+
+  const combinedSessionId = crypto.randomUUID();
+  const mergedChunks = sourceSessions.flatMap((session) =>
+    session.chunks.map((chunk) => ({
+      ...chunk,
+      fileName: chunk.fileName || session.fileName,
+      originalSessionId: chunk.originalSessionId || session.id
+    }))
+  );
+  const chunks = mergedChunks.map((chunk, index) => ({
+    ...chunk,
+    id: index + 1,
+    label: `Chunk ${index + 1}`
+  }));
+  const documents = sourceSessions.map((session) => ({
+    sessionId: session.id,
+    fileName: session.fileName,
+    fileSize: session.fileSize,
+    pageCount: session.pageCount,
+    uploadedAt: session.uploadedAt
+  }));
+
+  sessions.set(combinedSessionId, {
+    id: combinedSessionId,
+    isCombined: true,
+    documents,
+    chunks
+  });
+
+  res.status(201).json({
+    combinedSessionId,
+    documentCount: documents.length,
+    totalChunks: chunks.length
   });
 });
 
@@ -221,7 +303,8 @@ app.post("/api/chat", async (req, res) => {
   const sourceMetadata = topChunks.map((chunk) => ({
     chunkIndex: chunk.id,
     excerpt: truncate(chunk.text, 80),
-    pageNumber: chunk.pageNumber
+    pageNumber: chunk.pageNumber,
+    fileName: chunk.fileName || session.fileName
   }));
 
   if (!groq) {
@@ -295,13 +378,30 @@ app.post("/api/chat", async (req, res) => {
 });
 
 app.delete("/api/session/:id", (req, res) => {
-  const deleted = sessions.delete(req.params.id);
+  const sessionId = req.params.id;
+  const deleted = sessions.delete(sessionId);
 
   if (!deleted) {
     res.status(404).json({
       error: "Session not found."
     });
     return;
+  }
+
+  const combinedSessionIdsToDelete = [];
+
+  for (const [id, session] of sessions.entries()) {
+    if (
+      session.isCombined &&
+      Array.isArray(session.documents) &&
+      session.documents.some((document) => document.sessionId === sessionId)
+    ) {
+      combinedSessionIdsToDelete.push(id);
+    }
+  }
+
+  for (const combinedSessionId of combinedSessionIdsToDelete) {
+    sessions.delete(combinedSessionId);
   }
 
   res.status(204).send();

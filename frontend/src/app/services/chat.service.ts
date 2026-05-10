@@ -23,6 +23,25 @@ export class ChatService {
   readonly toast$ = this.toastSubject.asObservable();
   readonly activeAssistantId$ = this.activeAssistantIdSubject.asObservable();
 
+  addSystemMessage(content: string): void {
+    const trimmedContent = content.trim();
+
+    if (!trimmedContent) {
+      return;
+    }
+
+    const systemMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "system",
+      content: trimmedContent,
+      createdAt: new Date().toISOString(),
+      status: "complete",
+      sources: []
+    };
+
+    this.messagesSubject.next([...this.messagesSubject.value, systemMessage]);
+  }
+
   async sendMessage(question: string, sessionId: string): Promise<void> {
     const trimmedQuestion = question.trim();
 
