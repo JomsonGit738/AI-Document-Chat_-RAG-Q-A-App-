@@ -156,7 +156,6 @@ app.post("/api/upload", (req, res) => {
       }));
       const excerpt = rawText.slice(0, 200);
       const summary = await generateDocumentSummary(rawText.slice(0, 3000));
-      const starterQuestions = await generateStarterQuestions(excerpt);
 
       sessions.set(sessionId, {
         id: sessionId,
@@ -167,6 +166,16 @@ app.post("/api/upload", (req, res) => {
         rawText,
         chunks
       });
+      const session = sessions.get(sessionId);
+      const totalChunks = session.chunks.length;
+      const midPoint = Math.floor(totalChunks / 2);
+      const sampleChunks = [
+        ...session.chunks.slice(0, 5),
+        ...session.chunks.slice(midPoint, midPoint + 5),
+        ...session.chunks.slice(-3)
+      ];
+      const sampleText = sampleChunks.map(c => c.text).join(" ").substring(0, 3000);
+      const starterQuestions = await generateStarterQuestions(sampleText);
 
       res.status(201).json({
         sessionId,
@@ -560,8 +569,8 @@ function cosineSimilarity(leftVector, rightVector) {
 }
 
 async function generateStarterQuestions(excerpt) {
-  if (!groq) {
-    return fallbackStarterQuestions(excerpt);
+  if (!excerpt || !groq) {
+    return [];
   }
 
   try {
@@ -569,29 +578,24 @@ async function generateStarterQuestions(excerpt) {
       model: MODEL,
       messages: [
         {
-          role: "system",
-          content:
-            'Generate exactly 3 concise recruiter-quality document questions. Return strict JSON with a single property named "questions" that is an array of 3 strings.'
-        },
-        {
           role: "user",
-          content: `Excerpt:\n${excerpt}`
+          content: `Read this document excerpt and generate exactly 3 specific questions that can be directly and completely answered from this text alone. Questions must be factual, specific, and answerable only from the provided content — not general knowledge. Return only a JSON array of 3 question strings, nothing else. Example format:
+["What is X?", "How does Y work?", "What are the requirements for Z?"]
+
+${excerpt}`
         }
       ],
       temperature: 0.4,
-      max_tokens: 256,
-      response_format: {
-        type: "json_object"
-      }
+      max_tokens: 256
     });
-    const payload = JSON.parse(completion.choices?.[0]?.message?.content || '{"questions":[]}');
-    const questions = Array.isArray(payload.questions)
-      ? payload.questions.filter((item) => typeof item === "string").slice(0, 3)
+    const payload = JSON.parse(completion.choices?.[0]?.message?.content || "[]");
+    const questions = Array.isArray(payload)
+      ? payload.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
       : [];
 
-    return questions.length === 3 ? questions : fallbackStarterQuestions(excerpt);
+    return questions.length === 3 ? questions : [];
   } catch (_error) {
-    return fallbackStarterQuestions(excerpt);
+    return [];
   }
 }
 
