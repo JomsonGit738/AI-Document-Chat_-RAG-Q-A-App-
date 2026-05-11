@@ -468,13 +468,59 @@ a {
 }
 
 .reading-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
   padding: var(--space-4) var(--space-5) 0;
 }
 
 .reading-tabs {
   display: flex;
+  flex: 1;
   gap: var(--space-4);
   border-bottom: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
+}
+
+.reading-toolbar__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: var(--space-2);
+}
+
+.export-chat-button {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 2.4rem;
+  min-width: 2.4rem !important;
+  height: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  border-color: color-mix(in srgb, var(--color-border-strong) 64%, transparent) !important;
+  color: var(--text-secondary) !important;
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent) !important;
+  box-shadow: none !important;
+}
+
+.export-chat-button .mat-icon {
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  font-size: 0.95rem !important;
+  line-height: 0.95rem !important;
+  margin: 0 !important;
+}
+
+.export-chat-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--color-accent) 44%, var(--color-border) 56%) !important;
+  color: var(--text-primary) !important;
+  background: color-mix(in srgb, var(--color-surface-hover) 76%, transparent) !important;
+}
+
+.export-chat-button:disabled {
+  opacity: 0.5;
 }
 
 .reading-tab {

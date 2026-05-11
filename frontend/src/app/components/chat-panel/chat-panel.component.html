@@ -83,6 +83,22 @@
             Chat
           </button>
         </div>
+
+        @if (canExportChat()) {
+          <div class="reading-toolbar__actions">
+            <button
+              mat-stroked-button
+              type="button"
+              class="export-chat-button"
+              matTooltip="Export Chat"
+              aria-label="Export Chat"
+              [disabled]="!canExportChat()"
+              (click)="exportChat()"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+          </div>
+        }
       </div>
 
       @if (activeTab() === "summary") {

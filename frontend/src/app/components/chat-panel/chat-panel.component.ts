@@ -24,6 +24,7 @@ import { openDocchatToast } from "../toast-snackbar/toast-snackbar.component";
 import { ChatMessage, MessageSource } from "../../models/docchat.models";
 import { ChatService } from "../../services/chat.service";
 import { DocumentService } from "../../services/document.service";
+import { ExportService } from "../../services/export.service";
 
 interface AssistantContentBlock {
   type: "paragraph" | "list";
@@ -60,6 +61,7 @@ export class ChatPanelComponent {
   private readonly chatService = inject(ChatService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly injector = inject(Injector);
+  private readonly exportService = inject(ExportService);
 
   protected readonly document = toSignal(this.documentService.document$, { initialValue: null });
   protected readonly messages = toSignal(this.chatService.messages$, { initialValue: [] });
@@ -75,6 +77,11 @@ export class ChatPanelComponent {
   protected readonly activeTab = signal<"summary" | "chat">("chat");
   protected readonly selectedSummarySessionId = signal<string | null>(null);
   protected readonly summaryDocuments = computed(() => this.document()?.documents || []);
+  protected readonly canExportChat = computed(() => {
+    const messages = this.messages();
+    return messages.some((message) => message.role === "user") &&
+      messages.some((message) => message.role === "assistant" && !!message.content.trim());
+  });
   protected readonly selectedSummaryDocument = computed(() => {
     const documents = this.summaryDocuments();
     const selectedId = this.selectedSummarySessionId();
@@ -279,6 +286,14 @@ export class ChatPanelComponent {
 
   protected stopStreaming(): void {
     this.chatService.stopStreaming();
+  }
+
+  protected exportChat(): void {
+    if (!this.canExportChat()) {
+      return;
+    }
+
+    this.exportService.exportChatAsPDF(this.messages(), this.document()?.documents ?? []);
   }
 
   protected selectTab(tab: "summary" | "chat"): void {

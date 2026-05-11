@@ -35,8 +35,8 @@ app.use(
       }
 
       callback(new Error("Origin not allowed by CORS"));
-    }
-  })
+    },
+  }),
 );
 app.use(express.json({ limit: "1mb" }));
 
@@ -46,8 +46,8 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: {
-    error: "Too many requests. Please wait a minute and try again."
-  }
+    error: "Too many requests. Please wait a minute and try again.",
+  },
 });
 
 app.use("/api", limiter);
@@ -55,7 +55,7 @@ app.use("/api", limiter);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: MAX_FILE_SIZE
+    fileSize: MAX_FILE_SIZE,
   },
   fileFilter(_req, file, callback) {
     const isPdfMime = file.mimetype === "application/pdf";
@@ -69,7 +69,7 @@ const upload = multer({
     const validationError = new Error("Only PDF files are supported.");
     validationError.name = "InvalidFileTypeError";
     callback(validationError);
-  }
+  },
 });
 
 app.get("/api/health", (_req, res) => {
@@ -77,7 +77,7 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     uptime: process.uptime(),
     sessions: sessions.size,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -87,33 +87,33 @@ app.post("/api/upload", (req, res) => {
       if (error instanceof multer.MulterError) {
         if (error.code === "LIMIT_FILE_SIZE") {
           res.status(413).json({
-            error: `File too large. Maximum size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB.`
+            error: `File too large. Maximum size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB.`,
           });
           return;
         }
 
         res.status(400).json({
-          error: "Upload failed. Please use a valid PDF file."
+          error: "Upload failed. Please use a valid PDF file.",
         });
         return;
       }
 
       if (error.name === "InvalidFileTypeError") {
         res.status(400).json({
-          error: "Only PDF files are supported."
+          error: "Only PDF files are supported.",
         });
         return;
       }
 
       res.status(500).json({
-        error: "Upload failed unexpectedly. Please try again."
+        error: "Upload failed unexpectedly. Please try again.",
       });
       return;
     }
 
     if (!req.file) {
       res.status(400).json({
-        error: "No PDF file was provided."
+        error: "No PDF file was provided.",
       });
       return;
     }
@@ -124,36 +124,38 @@ app.post("/api/upload", (req, res) => {
         pagerender: async (pageData) => {
           const textContent = await pageData.getTextContent({
             normalizeWhitespace: true,
-            disableCombineTextItems: false
+            disableCombineTextItems: false,
           });
           const pageText = normalizeWhitespace(
-            textContent.items.map((item) => item.str || "").join(" ")
+            textContent.items.map((item) => item.str || "").join(" "),
           );
 
           pageTexts.push(pageText);
           return pageText;
-        }
+        },
       });
       const rawText = normalizeWhitespace(pageTexts.filter(Boolean).join(" "));
 
       if (!rawText) {
         res.status(400).json({
-          error: "This PDF does not contain selectable text."
+          error: "This PDF does not contain selectable text.",
         });
         return;
       }
 
       const sessionId = crypto.randomUUID();
       const uploadedAt = new Date().toISOString();
-      const chunks = buildPageAwareChunks(pageTexts, 500, 50).map((chunk, index) => ({
-        id: index + 1,
-        label: `Chunk ${index + 1}`,
-        text: chunk.text,
-        pageNumber: chunk.pageNumber,
-        vector: buildTermFrequency(chunk.text),
-        fileName: req.file.originalname,
-        originalSessionId: sessionId
-      }));
+      const chunks = buildPageAwareChunks(pageTexts, 500, 50).map(
+        (chunk, index) => ({
+          id: index + 1,
+          label: `Chunk ${index + 1}`,
+          text: chunk.text,
+          pageNumber: chunk.pageNumber,
+          vector: buildTermFrequency(chunk.text),
+          fileName: req.file.originalname,
+          originalSessionId: sessionId,
+        }),
+      );
       const excerpt = rawText.slice(0, 200);
       const summary = await generateDocumentSummary(rawText.slice(0, 3000));
 
@@ -164,7 +166,7 @@ app.post("/api/upload", (req, res) => {
         pageCount: parsed.numpages || 0,
         uploadedAt,
         rawText,
-        chunks
+        chunks,
       });
       const session = sessions.get(sessionId);
       const totalChunks = session.chunks.length;
@@ -172,9 +174,12 @@ app.post("/api/upload", (req, res) => {
       const sampleChunks = [
         ...session.chunks.slice(0, 5),
         ...session.chunks.slice(midPoint, midPoint + 5),
-        ...session.chunks.slice(-3)
+        ...session.chunks.slice(-3),
       ];
-      const sampleText = sampleChunks.map(c => c.text).join(" ").substring(0, 3000);
+      const sampleText = sampleChunks
+        .map((c) => c.text)
+        .join(" ")
+        .substring(0, 3000);
       const starterQuestions = await generateStarterQuestions(sampleText);
 
       res.status(201).json({
@@ -186,15 +191,16 @@ app.post("/api/upload", (req, res) => {
           fileName: req.file.originalname,
           fileSize: req.file.size,
           pageCount: parsed.numpages || 0,
-          uploadedAt
+          uploadedAt,
         },
         excerpt,
         starterQuestions,
-        summary
+        summary,
       });
     } catch (parseError) {
       res.status(400).json({
-        error: "Unable to read this PDF. Please upload a text-based PDF document."
+        error:
+          "Unable to read this PDF. Please upload a text-based PDF document.",
       });
     }
   });
@@ -205,25 +211,29 @@ app.post("/api/session/combine", (req, res) => {
 
   if (!Array.isArray(sessionIds) || !sessionIds.length) {
     res.status(400).json({
-      error: "sessionIds must be a non-empty array."
+      error: "sessionIds must be a non-empty array.",
     });
     return;
   }
 
   if (sessionIds.length > MAX_DOCUMENTS_PER_SESSION) {
     res.status(400).json({
-      error: `You can combine up to ${MAX_DOCUMENTS_PER_SESSION} documents at a time.`
+      error: `You can combine up to ${MAX_DOCUMENTS_PER_SESSION} documents at a time.`,
     });
     return;
   }
 
   const uniqueSessionIds = Array.from(
-    new Set(sessionIds.filter((sessionId) => typeof sessionId === "string" && sessionId.trim()))
+    new Set(
+      sessionIds.filter(
+        (sessionId) => typeof sessionId === "string" && sessionId.trim(),
+      ),
+    ),
   );
 
   if (!uniqueSessionIds.length) {
     res.status(400).json({
-      error: "sessionIds must contain valid session ids."
+      error: "sessionIds must contain valid session ids.",
     });
     return;
   }
@@ -235,7 +245,7 @@ app.post("/api/session/combine", (req, res) => {
 
     if (!session || session.isCombined) {
       res.status(404).json({
-        error: `Session not found: ${sessionId}`
+        error: `Session not found: ${sessionId}`,
       });
       return;
     }
@@ -248,33 +258,33 @@ app.post("/api/session/combine", (req, res) => {
     session.chunks.map((chunk) => ({
       ...chunk,
       fileName: chunk.fileName || session.fileName,
-      originalSessionId: chunk.originalSessionId || session.id
-    }))
+      originalSessionId: chunk.originalSessionId || session.id,
+    })),
   );
   const chunks = mergedChunks.map((chunk, index) => ({
     ...chunk,
     id: index + 1,
-    label: `Chunk ${index + 1}`
+    label: `Chunk ${index + 1}`,
   }));
   const documents = sourceSessions.map((session) => ({
     sessionId: session.id,
     fileName: session.fileName,
     fileSize: session.fileSize,
     pageCount: session.pageCount,
-    uploadedAt: session.uploadedAt
+    uploadedAt: session.uploadedAt,
   }));
 
   sessions.set(combinedSessionId, {
     id: combinedSessionId,
     isCombined: true,
     documents,
-    chunks
+    chunks,
   });
 
   res.status(201).json({
     combinedSessionId,
     documentCount: documents.length,
-    totalChunks: chunks.length
+    totalChunks: chunks.length,
   });
 });
 
@@ -283,7 +293,7 @@ app.post("/api/chat", async (req, res) => {
 
   if (!question || typeof question !== "string") {
     res.status(400).json({
-      error: "A question is required."
+      error: "A question is required.",
     });
     return;
   }
@@ -292,21 +302,21 @@ app.post("/api/chat", async (req, res) => {
 
   if (!trimmedQuestion) {
     res.status(400).json({
-      error: "A question is required."
+      error: "A question is required.",
     });
     return;
   }
 
   if (trimmedQuestion.length > MAX_QUESTION_LENGTH) {
     res.status(400).json({
-      error: `Questions must be ${MAX_QUESTION_LENGTH} characters or fewer.`
+      error: `Questions must be ${MAX_QUESTION_LENGTH} characters or fewer.`,
     });
     return;
   }
 
   if (!sessionId || typeof sessionId !== "string") {
     res.status(400).json({
-      error: "A sessionId is required."
+      error: "A sessionId is required.",
     });
     return;
   }
@@ -315,7 +325,7 @@ app.post("/api/chat", async (req, res) => {
 
   if (!session) {
     res.status(404).json({
-      error: "Session not found. Please re-upload your document."
+      error: "Session not found. Please re-upload your document.",
     });
     return;
   }
@@ -330,12 +340,13 @@ app.post("/api/chat", async (req, res) => {
     chunkIndex: chunk.id,
     excerpt: truncate(chunk.text, 80),
     pageNumber: chunk.pageNumber,
-    fileName: chunk.fileName || session.fileName
+    fileName: chunk.fileName || session.fileName,
   }));
 
   if (!groq) {
     sendEvent(res, "error", {
-      error: "The AI service is not configured yet. Add GROQ_API_KEY on the backend."
+      error:
+        "The AI service is not configured yet. Add GROQ_API_KEY on the backend.",
     });
     sendEvent(res, "done", { complete: true });
     res.end();
@@ -344,34 +355,25 @@ app.post("/api/chat", async (req, res) => {
 
   const systemPrompt =
     "You are a document assistant. Answer ONLY from the provided document context. If the answer isn't in the context, say so clearly. Be concise and precise.";
-  const context = topChunks.map((chunk) => `[${chunk.label}]\n${chunk.text}`).join("\n");
+  const context = topChunks
+    .map((chunk) => `[${chunk.label}]\n${chunk.text}`)
+    .join("\n");
 
   try {
-    console.log("=== RAG Chunk Selection ===");
-    console.log("Question:", trimmedQuestion);
-    console.log(
-      "Selected chunks:",
-      topChunks.map((chunk, i) => ({
-        index: i,
-        preview: chunk.text.substring(0, 100) + "..."
-      }))
-    );
-    console.log("===========================");
-
     const stream = await groq.chat.completions.create({
       model: MODEL,
       messages: [
         {
           role: "system",
-          content: systemPrompt
+          content: systemPrompt,
         },
         {
           role: "user",
-          content: `Context:\n${context}\n\nQuestion: ${trimmedQuestion}`
-        }
+          content: `Context:\n${context}\n\nQuestion: ${trimmedQuestion}`,
+        },
       ],
       stream: true,
-      max_tokens: 1024
+      max_tokens: 1024,
     });
 
     for await (const part of stream) {
@@ -379,25 +381,25 @@ app.post("/api/chat", async (req, res) => {
 
       if (delta) {
         sendEvent(res, "chunk", {
-          content: delta
+          content: delta,
         });
       }
     }
 
     sendEvent(res, "done", { complete: true });
     sendEvent(res, "sources", {
-      sources: sourceMetadata
+      sources: sourceMetadata,
     });
     res.end();
   } catch (groqError) {
     console.error("Groq API request failed:", summarizeGroqError(groqError));
 
     sendEvent(res, "error", {
-      error: resolveGroqErrorMessage(groqError, MODEL)
+      error: resolveGroqErrorMessage(groqError, MODEL),
     });
     sendEvent(res, "done", { complete: true });
     sendEvent(res, "sources", {
-      sources: sourceMetadata
+      sources: sourceMetadata,
     });
     res.end();
   }
@@ -409,7 +411,7 @@ app.delete("/api/session/:id", (req, res) => {
 
   if (!deleted) {
     res.status(404).json({
-      error: "Session not found."
+      error: "Session not found.",
     });
     return;
   }
@@ -436,19 +438,17 @@ app.delete("/api/session/:id", (req, res) => {
 app.use((error, _req, res, _next) => {
   if (error.message === "Origin not allowed by CORS") {
     res.status(403).json({
-      error: "This origin is not allowed to access the API."
+      error: "This origin is not allowed to access the API.",
     });
     return;
   }
 
   res.status(500).json({
-    error: "Unexpected server error."
+    error: "Unexpected server error.",
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`DocChat backend listening on port ${PORT}`);
-});
+app.listen(PORT);
 
 function normalizeWhitespace(value) {
   return value.replace(/\s+/g, " ").trim();
@@ -488,7 +488,7 @@ function buildPageAwareChunks(pageTexts, chunkSize, overlap) {
     for (const text of pageChunks) {
       chunks.push({
         text,
-        pageNumber: pageIndex + 1
+        pageNumber: pageIndex + 1,
       });
     }
   });
@@ -524,7 +524,7 @@ function rankChunks(question, chunks) {
 
     return {
       ...chunk,
-      score
+      score,
     };
   });
 
@@ -582,15 +582,20 @@ async function generateStarterQuestions(excerpt) {
           content: `Read this document excerpt and generate exactly 3 specific questions that can be directly and completely answered from this text alone. Questions must be factual, specific, and answerable only from the provided content — not general knowledge. Return only a JSON array of 3 question strings, nothing else. Example format:
 ["What is X?", "How does Y work?", "What are the requirements for Z?"]
 
-${excerpt}`
-        }
+${excerpt}`,
+        },
       ],
       temperature: 0.4,
-      max_tokens: 256
+      max_tokens: 256,
     });
-    const payload = JSON.parse(completion.choices?.[0]?.message?.content || "[]");
+    const payload = JSON.parse(
+      completion.choices?.[0]?.message?.content || "[]",
+    );
     const questions = Array.isArray(payload)
-      ? payload.filter((item) => typeof item === "string").map((item) => item.trim()).filter(Boolean)
+      ? payload
+          .filter((item) => typeof item === "string")
+          .map((item) => item.trim())
+          .filter(Boolean)
       : [];
 
     return questions.length === 3 ? questions : [];
@@ -617,21 +622,24 @@ async function generateDocumentSummary(excerpt) {
             '- "overview": a short overview paragraph in 2 to 3 sentences.',
             '- "bullets": an array of 3 to 5 concise bullet points covering the most important details.',
             "Do not invent information. Use only the provided document text.",
-            excerpt
-          ].join("\n\n")
-        }
+            excerpt,
+          ].join("\n\n"),
+        },
       ],
       temperature: 0.3,
       max_tokens: 320,
       response_format: {
-        type: "json_object"
-      }
+        type: "json_object",
+      },
     });
     const payload = JSON.parse(
-      completion.choices?.[0]?.message?.content || '{"overview":"","bullets":[]}'
+      completion.choices?.[0]?.message?.content ||
+        '{"overview":"","bullets":[]}',
     );
     const overview =
-      typeof payload.overview === "string" ? payload.overview.replace(/\s+/g, " ").trim() : "";
+      typeof payload.overview === "string"
+        ? payload.overview.replace(/\s+/g, " ").trim()
+        : "";
     const bullets = Array.isArray(payload.bullets)
       ? payload.bullets
           .filter((item) => typeof item === "string")
@@ -660,7 +668,7 @@ function fallbackStarterQuestions(excerpt) {
   return [
     `What are the main takeaways from ${topic.toLowerCase()}?`,
     `Can you summarize the section about ${secondary.toLowerCase()}?`,
-    "Which details in this document matter most?"
+    "Which details in this document matter most?",
   ];
 }
 
@@ -675,12 +683,18 @@ function fallbackDocumentSummary(excerpt) {
   const bullets = sentences.slice(0, 4);
 
   while (bullets.length < 3) {
-    bullets.push("This document contains additional details that can be explored in chat");
+    bullets.push(
+      "This document contains additional details that can be explored in chat",
+    );
   }
 
   return {
-    overview: overview ? `${overview}.` : "This document contains key details that can be explored in chat.",
-    bullets: bullets.map((sentence) => `${sentence.replace(/\s+/g, " ").trim()}.`)
+    overview: overview
+      ? `${overview}.`
+      : "This document contains key details that can be explored in chat.",
+    bullets: bullets.map(
+      (sentence) => `${sentence.replace(/\s+/g, " ").trim()}.`,
+    ),
   };
 }
 
@@ -696,7 +710,11 @@ function truncate(value, maxLength) {
 
   const sliced = value.slice(0, maxLength + 1);
   const boundaryIndex = sliced.lastIndexOf(" ");
-  const safeSlice = (boundaryIndex > 0 ? sliced.slice(0, boundaryIndex) : value.slice(0, maxLength))
+  const safeSlice = (
+    boundaryIndex > 0
+      ? sliced.slice(0, boundaryIndex)
+      : value.slice(0, maxLength)
+  )
     .trim()
     .replace(/[.,;:!?-]+$/g, "");
 
@@ -736,6 +754,6 @@ function summarizeGroqError(error) {
     status: error?.status || null,
     code: error?.code || error?.error?.code || null,
     type: error?.name || null,
-    message: error?.message || "Unknown Groq API error"
+    message: error?.message || "Unknown Groq API error",
   };
 }
