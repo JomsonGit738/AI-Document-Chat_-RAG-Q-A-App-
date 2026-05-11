@@ -12,6 +12,7 @@ const app = express();
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_FILE_SIZE = Number(process.env.MAX_FILE_SIZE || 10 * 1024 * 1024);
+const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 500);
 const MODEL = "llama-3.3-70b-versatile";
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:4200")
   .split(",")
@@ -278,6 +279,22 @@ app.post("/api/chat", async (req, res) => {
     return;
   }
 
+  const trimmedQuestion = question.trim();
+
+  if (!trimmedQuestion) {
+    res.status(400).json({
+      error: "A question is required."
+    });
+    return;
+  }
+
+  if (trimmedQuestion.length > MAX_QUESTION_LENGTH) {
+    res.status(400).json({
+      error: `Questions must be ${MAX_QUESTION_LENGTH} characters or fewer.`
+    });
+    return;
+  }
+
   if (!sessionId || typeof sessionId !== "string") {
     res.status(400).json({
       error: "A sessionId is required."
@@ -299,7 +316,7 @@ app.post("/api/chat", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  const topChunks = rankChunks(question, session.chunks).slice(0, 3);
+  const topChunks = rankChunks(trimmedQuestion, session.chunks).slice(0, 3);
   const sourceMetadata = topChunks.map((chunk) => ({
     chunkIndex: chunk.id,
     excerpt: truncate(chunk.text, 80),
@@ -322,7 +339,7 @@ app.post("/api/chat", async (req, res) => {
 
   try {
     console.log("=== RAG Chunk Selection ===");
-    console.log("Question:", question);
+    console.log("Question:", trimmedQuestion);
     console.log(
       "Selected chunks:",
       topChunks.map((chunk, i) => ({
@@ -341,7 +358,7 @@ app.post("/api/chat", async (req, res) => {
         },
         {
           role: "user",
-          content: `Context:\n${context}\n\nQuestion: ${question}`
+          content: `Context:\n${context}\n\nQuestion: ${trimmedQuestion}`
         }
       ],
       stream: true,

@@ -2,17 +2,13 @@
   <div class="intake-panel__header-shell">
     <div class="intake-panel__header">
       <p class="intake-panel__eyebrow">
-        {{ showWorkspaceHeader() ? "Research Console" : "Intake Shelf" }}
+        Intake Shelf
       </p>
       <h2 class="intake-panel__title">
         {{ showWorkspaceHeader() ? "DocChat" : "Document intake" }}
       </h2>
       <p class="intake-panel__copy">
-        {{
-          showWorkspaceHeader()
-            ? "A document reading room for source-grounded summaries, questions, and citation-aware answers."
-            : "Bring in up to five PDFs, keep the source set tidy, then move into grounded summaries and chat."
-        }}
+        Bring in up to five PDFs, keep the source set tidy, then move into grounded summaries and chat.
       </p>
     </div>
   </div>
@@ -64,16 +60,6 @@
     </span>
   </button>
 
-  @if (uploadStatus() === "loading") {
-    <div class="upload-progress">
-      <div class="upload-progress__row">
-        <span>Uploading {{ uploadTarget()?.fileName || "document" }}</span>
-        <span>{{ uploadProgress() }}%</span>
-      </div>
-      <mat-progress-bar mode="determinate" [value]="uploadProgress()" />
-    </div>
-  }
-
   @if (documents().length || uploadTarget()) {
     <div class="document-stack">
       @for (document of documents(); track document.sessionId) {
@@ -110,22 +96,21 @@
 
       @if (uploadTarget(); as uploadTarget) {
         <section class="document-sheet document-sheet--pending" data-motion="lift">
-          <div class="document-sheet__meta">
-            <span class="document-icon">
-              <mat-icon>upload_file</mat-icon>
-            </span>
-            <div class="document-sheet__content document-sheet__content--wide">
-              <div class="document-sheet__row">
+          <div class="document-sheet__row">
+            <div class="document-sheet__meta">
+              <span class="document-icon">
+                <mat-icon>upload_file</mat-icon>
+              </span>
+              <div class="document-sheet__content document-sheet__content--wide">
                 <p class="document-sheet__name">
                   {{ uploadTarget.fileName }}
                 </p>
-                <span class="document-sheet__pending-value">{{ uploadTarget.progress }}%</span>
+                <p class="document-sheet__details">
+                  {{ formatBytes(uploadTarget.fileSize) }} · {{ uploadTarget.progress }}%
+                </p>
               </div>
-              <p class="document-sheet__details">
-                {{ formatBytes(uploadTarget.fileSize) }} · Uploading
-              </p>
-              <mat-progress-bar class="document-sheet__progress" mode="determinate" [value]="uploadTarget.progress" />
             </div>
+            <div class="document-sheet__actions" aria-hidden="true"></div>
           </div>
         </section>
       }

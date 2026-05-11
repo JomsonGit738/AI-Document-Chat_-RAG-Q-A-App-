@@ -3,37 +3,43 @@
     <div class="reading-empty-state">
       <div class="reading-empty-state__eyebrow">Reading Room</div>
       <h1 class="reading-empty-state__title">Chat with your documents</h1>
-      <p class="reading-empty-state__copy measure-copy">
+      <p class="reading-empty-state__copy">
         Upload a PDF to start asking questions. DocChat retrieves the strongest context,
         streams the answer, and shows which document chunks informed the response.
       </p>
 
       <div class="reading-empty-state__features">
         <article class="feature-note" data-motion="lift">
-          <div class="feature-note__icon">
-            <mat-icon>bolt</mat-icon>
+          <div class="feature-note__head">
+            <div class="feature-note__icon">
+              <mat-icon>bolt</mat-icon>
+            </div>
+            <h3 class="feature-note__title">Instant answers</h3>
           </div>
-          <h3 class="feature-note__title">Instant answers</h3>
           <p class="feature-note__copy">
             Ingest a PDF once and move straight into low-latency Q&amp;A with streamed output.
           </p>
         </article>
 
         <article class="feature-note" data-motion="lift">
-          <div class="feature-note__icon">
-            <mat-icon>article</mat-icon>
+          <div class="feature-note__head">
+            <div class="feature-note__icon">
+              <mat-icon>article</mat-icon>
+            </div>
+            <h3 class="feature-note__title">Source-aware</h3>
           </div>
-          <h3 class="feature-note__title">Source-aware</h3>
           <p class="feature-note__copy">
             Retrieval ranks the most relevant chunks and reveals them beneath each answer.
           </p>
         </article>
 
         <article class="feature-note" data-motion="lift">
-          <div class="feature-note__icon">
-            <mat-icon>auto_awesome</mat-icon>
+          <div class="feature-note__head">
+            <div class="feature-note__icon">
+              <mat-icon>auto_awesome</mat-icon>
+            </div>
+            <h3 class="feature-note__title">Streaming responses</h3>
           </div>
-          <h3 class="feature-note__title">Streaming responses</h3>
           <p class="feature-note__copy">
             Token-by-token output keeps the interface responsive and enterprise-feeling.
           </p>
@@ -64,7 +70,7 @@
             [class.reading-tab--active]="activeTab() === 'summary'"
             (click)="selectTab('summary')"
           >
-            <span class="reading-tab__index">01</span>
+            <mat-icon class="reading-tab__icon">article</mat-icon>
             Summary
           </button>
           <button
@@ -73,7 +79,7 @@
             [class.reading-tab--active]="activeTab() === 'chat'"
             (click)="selectTab('chat')"
           >
-            <span class="reading-tab__index">02</span>
+            <mat-icon class="reading-tab__icon">forum</mat-icon>
             Chat
           </button>
         </div>
@@ -84,25 +90,29 @@
             <div class="reading-stage__inner">
               <div class="summary-header">
                 <p class="summary-header__title">
-                  {{ document()?.isCombined ? "Workspace Summary" : "Document Summary" }}
+                  Document Summary
                 </p>
                 <div class="summary-header__chips">
-                  @for (doc of document()?.documents || []; track doc.sessionId) {
-                    <span class="summary-chip" [attr.title]="doc.fileName">
+                  @for (doc of summaryDocuments(); track doc.sessionId) {
+                    <button
+                      type="button"
+                      class="summary-chip"
+                      [class.summary-chip--active]="selectedSummaryDocumentId() === doc.sessionId"
+                      [attr.title]="doc.fileName"
+                      (click)="selectSummaryDocument(doc.sessionId)"
+                    >
                       <mat-icon class="summary-chip__icon">description</mat-icon>
                       <span class="truncate">{{ doc.fileName }}</span>
-                    </span>
+                    </button>
                   }
                 </div>
               </div>
 
-              @for (doc of document()?.documents || []; track doc.sessionId; let docIndex = $index) {
-                <section class="summary-section" [class.mb-10]="docIndex < (document()?.documents?.length || 0) - 1">
-                  @if (document()?.isCombined) {
-                    <p class="summary-section__label">
-                      {{ doc.fileName }}
-                    </p>
-                  }
+              @if (selectedSummaryDocument(); as doc) {
+                <section class="summary-section">
+                  <p class="summary-section__label">
+                    {{ doc.fileName }}
+                  </p>
 
                   @if (doc.summary.overview) {
                     <p class="summary-section__overview measure-copy">
@@ -135,22 +145,10 @@
                 <button type="button" class="question-card" data-motion="lift" (click)="submitSuggestedQuestion(question)">
                   <div class="question-card__head">
                     <div class="question-card__meta">
-                      <span class="question-card__index">0{{ index + 1 }}</span>
                       <span class="question-icon">
-                        <mat-icon>
-                          {{
-                            index === 0
-                              ? "summarize"
-                              : index === 1
-                                ? "event"
-                                : index === 2
-                                  ? "policy"
-                                : "task_alt"
-                          }}
-                        </mat-icon>
+                        <mat-icon>help</mat-icon>
                       </span>
                     </div>
-                    <mat-icon class="question-card__arrow">arrow_outward</mat-icon>
                   </div>
                   <p class="question-card-text">{{ question }}</p>
                 </button>
@@ -211,7 +209,7 @@
                           }
                         </div>
                       } @else if (message.role === "system") {
-                        <p class="break-words text-center">{{ message.content }}</p>
+                        <p class="break-words">{{ message.content }}</p>
                       } @else {
                         <p class="break-words whitespace-pre-wrap">
                           {{ message.content }}
@@ -238,10 +236,25 @@
 
                   @if (message.role === "assistant") {
                     <div class="message-actions">
+                      @if (message.sources?.length) {
+                        <button
+                          type="button"
+                          aria-label="Toggle sources"
+                          class="message-action-button"
+                          [class.message-action-button--active]="isSourcesOpen(message.id)"
+                          [matTooltip]="isSourcesOpen(message.id) ? 'Hide sources' : 'Show sources'"
+                          (click)="toggleSources(message.id)"
+                        >
+                          <mat-icon>
+                            {{ isSourcesOpen(message.id) ? "source_notes" : "library_books" }}
+                          </mat-icon>
+                        </button>
+                      }
                       <button
                         type="button"
                         aria-label="Copy response"
                         class="message-action-button"
+                        matTooltip="Copy response"
                         (click)="copyMessage(message)"
                       >
                         <mat-icon>
@@ -251,8 +264,11 @@
                     </div>
                   }
 
-                    @if (message.role === "assistant" && message.sources?.length) {
-                      <div class="sources-section">
+                  @if (message.role === "assistant" && message.sources?.length) {
+                    <div
+                      class="sources-section"
+                      [class.sources-section--open]="isSourcesOpen(message.id)"
+                    >
                         @for (source of message.sources; track trackSource($index, source)) {
                           <div class="source-inline-line">
                             <span class="source-inline-chunk">Chunk #{{ source.chunkIndex }}</span>
@@ -280,43 +296,45 @@
             [formGroup]="questionForm"
             (submit)="$event.preventDefault(); sendCurrentQuestion()"
           >
-            <textarea
-              cdkTextareaAutosize
-              cdkAutosizeMinRows="1"
-              cdkAutosizeMaxRows="4"
-              formControlName="question"
-              maxlength="500"
-              rows="1"
-              class="chat-composer-textarea"
-              placeholder="Ask a specific question about your document set..."
-              (keydown)="onComposerKeydown($event)"
-            ></textarea>
+            <div class="composer-row">
+              <textarea
+                #composerTextarea
+                cdkTextareaAutosize
+                cdkAutosizeMinRows="1"
+                cdkAutosizeMaxRows="10"
+                formControlName="question"
+                maxlength="500"
+                rows="1"
+                class="chat-composer-textarea"
+                placeholder="Ask a specific question about your document set..."
+                (keydown)="onComposerKeydown($event)"
+                (paste)="onComposerPaste($event)"
+              ></textarea>
 
-            <div class="composer-meta">
-              <div class="composer-meta__left">
+              <div class="composer-meta">
                 <p class="composer-meta__count">{{ currentCharacterCount }}/500</p>
-              </div>
 
-              @if (isStreaming()) {
-                <button
-                  mat-stroked-button
-                  type="button"
-                  class="composer-stop-button"
-                  (click)="stopStreaming()"
-                >
-                  Stop generating
-                </button>
-              } @else {
-                <button
-                  mat-flat-button
-                  type="submit"
-                  class="composer-submit-button composer-submit-button--icon"
-                  aria-label="Send message"
-                  [disabled]="questionControl.invalid || !questionControl.value.trim()"
-                >
-                  <mat-icon>north_east</mat-icon>
-                </button>
-              }
+                @if (isStreaming()) {
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    class="composer-stop-button"
+                    (click)="stopStreaming()"
+                  >
+                    Stop generating
+                  </button>
+                } @else {
+                  <button
+                    mat-flat-button
+                    type="submit"
+                    class="composer-submit-button composer-submit-button--icon"
+                    aria-label="Send message"
+                    [disabled]="questionControl.invalid || !questionControl.value.trim()"
+                  >
+                    <mat-icon>north_east</mat-icon>
+                  </button>
+                }
+              </div>
             </div>
           </form>
         </div>

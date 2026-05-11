@@ -271,6 +271,25 @@ a {
   padding: 0 !important;
 }
 
+.mat-mdc-tooltip {
+  --mdc-plain-tooltip-container-color: color-mix(in srgb, var(--color-ink) 94%, transparent);
+  --mdc-plain-tooltip-supporting-text-color: var(--color-surface);
+}
+
+.mat-mdc-tooltip .mdc-tooltip__surface {
+  border: 1px solid color-mix(in srgb, var(--color-border-strong) 24%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-ink) 94%, transparent) !important;
+  color: var(--color-surface) !important;
+  box-shadow: var(--shadow-md);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  padding: 0.45rem 0.65rem !important;
+}
+
 /* Shared reading-surface styles extracted from component CSS to keep Angular style budgets sane. */
 .reading-panel {
   position: relative;
@@ -316,7 +335,6 @@ a {
   color: var(--text-secondary);
   font-size: var(--text-step-1);
   line-height: var(--leading-roomy);
-  max-width: 52ch;
 }
 
 .reading-empty-state__features {
@@ -332,24 +350,70 @@ a {
   gap: var(--space-3);
   padding: var(--space-4);
   border-top: 1px solid color-mix(in srgb, var(--color-border-strong) 32%, transparent);
-  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface) 72%, transparent),
+      color-mix(in srgb, var(--color-canvas) 30%, var(--color-surface))
+    );
+  transition:
+    transform var(--motion-base) var(--ease-emphasis),
+    background-color var(--motion-base) var(--ease-productive),
+    border-color var(--motion-base) var(--ease-productive),
+    box-shadow var(--motion-base) var(--ease-productive);
+}
+
+.feature-note__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
 }
 
 .feature-note:hover {
-  box-shadow: var(--shadow-sm);
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--color-accent) 22%, var(--color-border-strong));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface) 94%, transparent),
+      color-mix(in srgb, var(--color-accent-soft) 18%, var(--color-surface))
+    );
+  box-shadow: var(--shadow-md);
+}
+
+.feature-note:hover .feature-note__icon {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 32%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-accent-soft) 54%, var(--color-surface));
+}
+
+.feature-note:hover .feature-note__title {
+  color: var(--color-accent-strong);
 }
 
 .feature-note__icon,
 .question-icon {
   display: inline-flex;
-  height: 2.5rem;
-  width: 2.5rem;
+  height: 2rem;
+  width: 2rem;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
   border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
   background: color-mix(in srgb, var(--color-accent-soft) 34%, var(--color-surface));
   color: var(--color-accent-strong);
+  transition:
+    transform var(--motion-base) var(--ease-emphasis),
+    background-color var(--motion-base) var(--ease-productive),
+    border-color var(--motion-base) var(--ease-productive),
+    box-shadow var(--motion-base) var(--ease-productive);
+}
+
+.question-icon .mat-icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  font-size: 0.9rem;
 }
 
 .feature-note__title {
@@ -357,6 +421,7 @@ a {
   font-size: var(--text-step-1);
   font-weight: 600;
   letter-spacing: -0.01em;
+  transition: color var(--motion-base) var(--ease-productive);
 }
 
 .feature-note__copy,
@@ -445,10 +510,20 @@ a {
   background: color-mix(in srgb, var(--color-accent) 70%, transparent);
 }
 
-.reading-tab__index {
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+.reading-tab__icon {
+  color: var(--text-secondary);
+  width: 0.95rem !important;
+  height: 0.95rem !important;
+  font-size: 0.95rem !important;
+  transition: color var(--motion-base) var(--ease-productive);
+}
+
+.reading-tab:hover .reading-tab__icon {
+  color: var(--text-secondary);
+}
+
+.reading-tab--active .reading-tab__icon {
+  color: var(--text-primary);
 }
 
 .reading-stage {
@@ -500,6 +575,26 @@ a {
   color: var(--color-accent-strong);
   font-size: 0.75rem;
   font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--motion-base) var(--ease-productive),
+    border-color var(--motion-base) var(--ease-productive),
+    color var(--motion-base) var(--ease-productive),
+    box-shadow var(--motion-base) var(--ease-productive),
+    transform var(--motion-base) var(--ease-emphasis);
+}
+
+.summary-chip:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--color-accent) 28%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-accent-soft) 42%, var(--color-surface));
+}
+
+.summary-chip--active {
+  border-color: color-mix(in srgb, var(--color-accent) 38%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-accent-soft) 56%, var(--color-surface));
+  color: var(--color-accent-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .summary-chip__icon {
@@ -559,15 +654,17 @@ a {
 
 .question-board {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
   margin-top: var(--space-5);
 }
 
 .question-card {
-  display: grid;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4);
+  padding: 0.65rem 0.9rem;
   border: 1px solid color-mix(in srgb, var(--color-border) 84%, transparent);
   border-radius: var(--radius-md);
   background:
@@ -588,9 +685,10 @@ a {
 
 .question-card__head {
   display: flex;
-  align-items: start;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: flex-start;
   gap: var(--space-3);
+  flex-shrink: 0;
 }
 
 .question-card__meta {
@@ -599,25 +697,22 @@ a {
   gap: var(--space-3);
 }
 
-.question-card__index {
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-}
-
 .question-card__arrow {
   color: var(--text-muted);
   font-size: 1rem !important;
   width: 1rem !important;
   height: 1rem !important;
+  flex-shrink: 0;
 }
 
 .question-card-text {
   color: var(--text-primary);
-  font-size: var(--text-step-0);
+  flex: 1;
+  max-width: none;
+  text-align: left;
+  font-size: 0.96rem;
   font-weight: 600;
-  line-height: var(--leading-copy);
-  max-width: 34ch;
+  line-height: 1.45;
 }
 
 .message-row {
@@ -644,7 +739,7 @@ a {
 }
 
 .message-frame--system {
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 .message-surface {
@@ -657,6 +752,12 @@ a {
 .message-user,
 .message-assistant {
   color: var(--text-primary);
+}
+
+.message-user {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .message-user p {
@@ -683,13 +784,12 @@ a {
 }
 
 .message-system {
-  border-radius: var(--radius-pill);
-  border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
-  background: color-mix(in srgb, var(--color-surface) 76%, transparent);
-  padding: 0.55rem 1rem;
+  max-width: min(100%, 36rem);
+  padding: 0;
   color: var(--text-secondary);
-  font-size: 0.82rem;
-  line-height: 1.5;
+  font-size: 0.74rem;
+  line-height: 1.45;
+  text-align: right;
 }
 
 .message-loading {
@@ -791,12 +891,38 @@ a {
   transform: translateY(-1px);
 }
 
+.message-action-button--active {
+  border-color: color-mix(in srgb, var(--color-accent) 30%, var(--color-border-strong));
+  background: color-mix(in srgb, var(--color-accent-soft) 52%, var(--color-surface));
+  color: var(--color-accent-strong);
+}
+
 .sources-section {
   display: grid;
   gap: var(--space-3);
+  max-height: 0;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 1px solid transparent;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateY(-0.35rem);
+  transition:
+    max-height var(--motion-slow) var(--ease-emphasis),
+    opacity var(--motion-base) var(--ease-productive),
+    transform var(--motion-base) var(--ease-emphasis),
+    margin-top var(--motion-base) var(--ease-productive),
+    padding-top var(--motion-base) var(--ease-productive),
+    border-color var(--motion-base) var(--ease-productive);
+}
+
+.sources-section--open {
+  max-height: 40rem;
   margin-top: var(--space-4);
   padding-top: var(--space-3);
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 74%, transparent);
+  border-top-color: color-mix(in srgb, var(--color-border) 74%, transparent);
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .source-inline-line {
@@ -850,10 +976,19 @@ a {
     transform var(--motion-base) var(--ease-emphasis);
 }
 
+.composer-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
 .chat-composer-textarea {
   min-height: 3.5rem;
   width: 100%;
   resize: none;
+  overflow-y: hidden;
+  scrollbar-width: none;
   border: 1px solid color-mix(in srgb, var(--color-border) 88%, transparent);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-surface) 88%, transparent);
@@ -867,6 +1002,10 @@ a {
     border-color var(--motion-base) var(--ease-productive),
     box-shadow var(--motion-base) var(--ease-productive),
     background-color var(--motion-base) var(--ease-productive);
+}
+
+.chat-composer-textarea::-webkit-scrollbar {
+  display: none;
 }
 
 .chat-composer-textarea::placeholder {
@@ -883,16 +1022,18 @@ a {
 
 .composer-meta {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-top: var(--space-3);
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  flex-shrink: 0;
 }
 
 .composer-meta__count {
   color: var(--text-muted);
   font-family: var(--font-mono);
   font-size: 0.72rem;
+  text-align: right;
 }
 
 .composer-submit-button,
@@ -1043,6 +1184,14 @@ a {
   .composer-meta {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .composer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .composer-meta {
+    align-items: flex-end;
   }
 }
 

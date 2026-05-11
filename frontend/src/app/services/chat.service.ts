@@ -4,6 +4,8 @@ import { environment } from "../../environments/environment";
 import { ChatMessage, SseEventPayload } from "../models/docchat.models";
 import { DocumentService } from "./document.service";
 
+const MAX_QUESTION_LENGTH = 500;
+
 @Injectable({
   providedIn: "root"
 })
@@ -46,6 +48,11 @@ export class ChatService {
     const trimmedQuestion = question.trim();
 
     if (!trimmedQuestion || this.isStreamingSubject.value) {
+      return;
+    }
+
+    if (trimmedQuestion.length > MAX_QUESTION_LENGTH) {
+      this.toastSubject.next(`Questions must be ${MAX_QUESTION_LENGTH} characters or fewer.`);
       return;
     }
 

@@ -1,6 +1,6 @@
 .intake-panel {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-height: 0;
   height: 100%;
   gap: var(--space-4);
@@ -161,6 +161,9 @@
 
 .document-sheet {
   position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 5.25rem;
   border-radius: var(--radius-md);
   border: 1px solid color-mix(in srgb, var(--color-border-strong) 32%, transparent);
   background:
@@ -171,6 +174,7 @@
     );
   padding: var(--space-4);
   box-shadow: var(--shadow-sm);
+  overflow: visible;
 }
 
 .document-sheet:hover {
@@ -191,17 +195,40 @@
   background: color-mix(in srgb, var(--color-accent) 56%, var(--color-highlight));
 }
 
+.document-sheet--pending {
+  overflow: hidden;
+}
+
+.document-sheet--pending::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      110deg,
+      transparent 0%,
+      color-mix(in srgb, var(--color-accent-soft) 28%, transparent) 35%,
+      color-mix(in srgb, var(--color-highlight) 32%, transparent) 50%,
+      color-mix(in srgb, var(--color-accent-soft) 20%, transparent) 65%,
+      transparent 100%
+    );
+  transform: translateX(-100%);
+  animation: pendingSweep 1.8s linear infinite;
+  pointer-events: none;
+}
+
 .document-sheet__row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  width: 100%;
 }
 
 .document-sheet__meta {
   display: flex;
   min-width: 0;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
 }
 
@@ -209,6 +236,7 @@
   display: grid;
   gap: var(--space-1);
   min-width: 0;
+  align-content: center;
 }
 
 .document-sheet__content--wide {
@@ -235,6 +263,7 @@
   color: var(--text-primary);
   font-size: var(--text-step-0);
   font-weight: 600;
+  line-height: 1.35;
 }
 
 .document-sheet__details,
@@ -302,5 +331,14 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes pendingSweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
   }
 }

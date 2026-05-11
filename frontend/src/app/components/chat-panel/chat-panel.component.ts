@@ -13,7 +13,7 @@ import {
 import { CommonModule } from "@angular/common";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { TextFieldModule } from "@angular/cdk/text-field";
+import { CdkTextareaAutosize, TextFieldModule } from "@angular/cdk/text-field";
 import { animate, style, transition, trigger } from "@angular/animations";
 import { MatButtonModule } from "@angular/material/button";
 import { MatChipsModule } from "@angular/material/chips";
@@ -73,6 +73,21 @@ export class ChatPanelComponent {
   protected readonly toastMessage = toSignal(this.chatService.toast$, { initialValue: null });
   protected readonly showEmptyState = computed(() => !this.document());
   protected readonly activeTab = signal<"summary" | "chat">("chat");
+  protected readonly selectedSummarySessionId = signal<string | null>(null);
+  protected readonly summaryDocuments = computed(() => this.document()?.documents || []);
+  protected readonly selectedSummaryDocument = computed(() => {
+    const documents = this.summaryDocuments();
+    const selectedId = this.selectedSummarySessionId();
+
+    return (
+      documents.find((item) => item.sessionId === selectedId) ||
+      documents[0] ||
+      null
+    );
+  });
+  protected readonly selectedSummaryDocumentId = computed(
+    () => this.selectedSummaryDocument()?.sessionId || null
+  );
   protected readonly showQuestionCards = computed(
     () => !!this.document() && this.activeTab() === "chat" && this.messages().length === 0
   );
@@ -96,9 +111,14 @@ export class ChatPanelComponent {
     })
   });
   protected readonly copiedMessageId = signal<string | null>(null);
+  protected readonly openSourceMessageIds = signal<string[]>([]);
 
   @ViewChild("scrollViewport")
   private scrollViewport?: ElementRef<HTMLDivElement>;
+  @ViewChild("composerTextarea")
+  private composerTextarea?: ElementRef<HTMLTextAreaElement>;
+  @ViewChild(CdkTextareaAutosize)
+  private composerAutosize?: CdkTextareaAutosize;
   private previousDocumentIds = "";
 
   constructor() {
@@ -108,6 +128,7 @@ export class ChatPanelComponent {
 
       if (!documentIds) {
         this.activeTab.set("chat");
+        this.selectedSummarySessionId.set(null);
         this.previousDocumentIds = "";
         return;
       }
@@ -129,6 +150,13 @@ export class ChatPanelComponent {
 
       if (this.previousDocumentIds !== documentIds) {
         this.activeTab.set("summary");
+      }
+
+      const documents = document?.documents || [];
+      const selectedId = this.selectedSummarySessionId();
+
+      if (!documents.some((item) => item.sessionId === selectedId)) {
+        this.selectedSummarySessionId.set(documents[0]?.sessionId || null);
       }
 
       this.previousDocumentIds = documentIds;
@@ -193,6 +221,7 @@ export class ChatPanelComponent {
     }
 
     this.questionForm.reset({ question: "" });
+    this.resetComposerHeight();
     await this.chatService.sendMessage(value, session.activeSessionId);
   }
 
@@ -203,12 +232,61 @@ export class ChatPanelComponent {
     }
   }
 
+  protected onComposerPaste(event: ClipboardEvent): void {
+    const clipboardText = event.clipboardData?.getData("text") ?? "";
+
+    if (!clipboardText) {
+      return;
+    }
+
+    const textarea = event.target as HTMLTextAreaElement | null;
+    const currentValue = this.questionControl.value;
+    const selectionStart = textarea?.selectionStart ?? currentValue.length;
+    const selectionEnd = textarea?.selectionEnd ?? currentValue.length;
+    const selectedLength = Math.max(0, selectionEnd - selectionStart);
+    const remaining = 500 - (currentValue.length - selectedLength);
+
+    if (remaining <= 0) {
+      event.preventDefault();
+      return;
+    }
+
+    if (clipboardText.length <= remaining) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const truncatedText = clipboardText.slice(0, remaining);
+    const nextValue =
+      currentValue.slice(0, selectionStart) +
+      truncatedText +
+      currentValue.slice(selectionEnd);
+
+    this.questionControl.setValue(nextValue);
+
+    queueMicrotask(() => {
+      if (!textarea) {
+        this.resetComposerHeight();
+        return;
+      }
+
+      const nextCursor = selectionStart + truncatedText.length;
+      textarea.setSelectionRange(nextCursor, nextCursor);
+      this.resetComposerHeight();
+    });
+  }
+
   protected stopStreaming(): void {
     this.chatService.stopStreaming();
   }
 
   protected selectTab(tab: "summary" | "chat"): void {
     this.activeTab.set(tab);
+  }
+
+  protected selectSummaryDocument(sessionId: string): void {
+    this.selectedSummarySessionId.set(sessionId);
   }
 
   protected async retryMessage(question: string | undefined): Promise<void> {
@@ -248,6 +326,31 @@ export class ChatPanelComponent {
         this.copiedMessageId.set(null);
       }
     }, 1200);
+  }
+
+  protected toggleSources(messageId: string): void {
+    this.openSourceMessageIds.update((ids) =>
+      ids.includes(messageId) ? ids.filter((id) => id !== messageId) : [...ids, messageId]
+    );
+  }
+
+  protected isSourcesOpen(messageId: string): boolean {
+    return this.openSourceMessageIds().includes(messageId);
+  }
+
+  private resetComposerHeight(): void {
+    afterNextRender(
+      () => {
+        const textarea = this.composerTextarea?.nativeElement;
+
+        if (textarea) {
+          textarea.style.height = "auto";
+        }
+
+        this.composerAutosize?.resizeToFitContent(true);
+      },
+      { injector: this.injector }
+    );
   }
 
   protected formatAssistantContent(content: string): string {
