@@ -313,13 +313,55 @@
     padding: var(--space-4);
   }
 
+  .intake-panel__title {
+    font-size: clamp(1.65rem, 7vw, 2.2rem);
+  }
+
+  .intake-panel__copy {
+    font-size: var(--text-step--1);
+  }
+
   .upload-zone {
     grid-template-columns: auto 1fr;
+    align-items: start;
+    min-height: 0;
   }
 
   .upload-zone__meta {
     grid-column: 2;
     justify-self: start;
+  }
+
+  .upload-zone__description {
+    max-width: none;
+  }
+
+  .document-sheet {
+    min-height: 0;
+    padding: var(--space-3);
+  }
+
+  .document-sheet__row {
+    align-items: flex-start;
+  }
+
+  .document-sheet__meta {
+    gap: var(--space-2);
+    align-items: flex-start;
+  }
+
+  .document-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .document-sheet__remove {
+    width: 2.75rem !important;
+    height: 2.75rem !important;
+  }
+
+  .intake-panel__footer {
+    padding-top: 0;
   }
 }
 

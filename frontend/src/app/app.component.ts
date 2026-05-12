@@ -1,4 +1,10 @@
-import { ChangeDetectionStrategy, Component, ViewChild, computed, inject } from "@angular/core";
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ViewChild,
+  computed,
+  inject
+} from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ChatPanelComponent } from "./components/chat-panel/chat-panel.component";
 import { UploadPanelComponent } from "./components/upload-panel/upload-panel.component";

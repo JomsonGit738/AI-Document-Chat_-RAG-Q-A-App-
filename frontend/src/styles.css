@@ -1204,6 +1204,21 @@ a {
 }
 
 @media (max-width: 1023px) {
+  html,
+  body {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  app-root {
+    display: block;
+    height: auto;
+    min-height: 100%;
+    overflow: visible;
+  }
+
   .reading-empty-state__features,
   .question-board {
     grid-template-columns: 1fr;
@@ -1238,6 +1253,134 @@ a {
 
   .composer-meta {
     align-items: flex-end;
+  }
+}
+
+@media (max-width: 767px) {
+  .reading-panel {
+    height: auto;
+    max-height: min(70dvh, 44rem);
+  }
+
+  .reading-body {
+    min-height: 0;
+  }
+
+  .reading-empty-state {
+    align-content: start;
+    min-height: 100%;
+  }
+
+  .session-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .session-banner__button {
+    width: 100%;
+    min-height: 2.75rem !important;
+  }
+
+  .reading-toolbar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .reading-tabs {
+    min-width: 0;
+  }
+
+  .reading-tab {
+    min-height: 2.75rem;
+    padding-bottom: var(--space-2);
+  }
+
+  .reading-toolbar__actions {
+    width: 100%;
+    justify-content: flex-start;
+    padding-bottom: 0;
+  }
+
+  .export-chat-button {
+    width: 2.75rem;
+    min-width: 2.75rem !important;
+    height: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  .summary-header {
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+  }
+
+  .summary-chip {
+    width: 100%;
+    min-height: 2.75rem;
+    justify-content: flex-start;
+  }
+
+  .question-card {
+    align-items: flex-start;
+    min-height: 2.75rem;
+  }
+
+  .message-row {
+    margin-bottom: var(--space-4);
+  }
+
+  .message-frame,
+  .message-assistant,
+  .assistant-paragraph {
+    max-width: 100%;
+  }
+
+  .message-user p,
+  .message-assistant p {
+    max-width: 100%;
+  }
+
+  .message-actions {
+    opacity: 1;
+    transform: none;
+    flex-wrap: wrap;
+  }
+
+  .message-action-button {
+    width: 2rem;
+    height: 2rem;
+    min-width: 2rem;
+    min-height: 2rem;
+  }
+
+  .source-inline-meta {
+    display: grid;
+    gap: 0.15rem;
+  }
+
+  .source-inline-separator {
+    display: none;
+  }
+
+  .composer-wrap {
+    padding-bottom: max(env(safe-area-inset-bottom), var(--space-4));
+  }
+
+  .chat-composer-shell {
+    padding-top: var(--space-3);
+  }
+
+  .composer-row {
+    gap: var(--space-2);
+  }
+
+  .chat-composer-textarea {
+    min-height: 3.25rem;
+  }
+
+  .composer-stop-button {
+    width: 100%;
+    min-height: 2.75rem !important;
   }
 }
 
