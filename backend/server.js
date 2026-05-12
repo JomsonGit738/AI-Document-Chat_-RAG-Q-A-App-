@@ -7,13 +7,17 @@ const multer = require("multer");
 const pdf = require("pdf-parse");
 const rateLimit = require("express-rate-limit");
 const Groq = require("groq-sdk");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 
 const PORT = Number(process.env.PORT || 3000);
 const MAX_FILE_SIZE = Number(process.env.MAX_FILE_SIZE || 10 * 1024 * 1024);
 const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 500);
-const MODEL = "llama-3.3-70b-versatile";
+// This flag lets .env choose the active provider without changing any frontend or API flow.
+const LLM_PROVIDER = (process.env.LLM_PROVIDER || "groq").trim().toLowerCase();
+const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:4200")
   .split(",")
   .map((origin) => origin.trim())
@@ -21,6 +25,9 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:4200")
 
 const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
+  : null;
+const gemini = process.env.GEMINI_API_KEY
+  ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
   : null;
 
 const MAX_DOCUMENTS_PER_SESSION = 5;
@@ -157,7 +164,15 @@ app.post("/api/upload", (req, res) => {
         }),
       );
       const excerpt = rawText.slice(0, 200);
-      const summary = await generateDocumentSummary(rawText.slice(0, 3000));
+      const meaningfulPages = pageTexts.filter((page) => page.trim().length > 200);
+      const totalPages = meaningfulPages.length;
+      const midPoint = Math.floor(totalPages / 2);
+      const samplePages = [
+        ...meaningfulPages.slice(0, 3),
+        ...meaningfulPages.slice(midPoint, midPoint + 3),
+        ...meaningfulPages.slice(-2),
+      ];
+      const sampleText = samplePages.join(" ").substring(0, 3000);
 
       sessions.set(sessionId, {
         id: sessionId,
@@ -168,19 +183,13 @@ app.post("/api/upload", (req, res) => {
         rawText,
         chunks,
       });
-      const session = sessions.get(sessionId);
-      const totalChunks = session.chunks.length;
-      const midPoint = Math.floor(totalChunks / 2);
-      const sampleChunks = [
-        ...session.chunks.slice(0, 5),
-        ...session.chunks.slice(midPoint, midPoint + 5),
-        ...session.chunks.slice(-3),
-      ];
-      const sampleText = sampleChunks
-        .map((c) => c.text)
-        .join(" ")
-        .substring(0, 3000);
+      const summary = await generateDocumentSummary(sampleText);
       const starterQuestions = await generateStarterQuestions(sampleText);
+      const session = sessions.get(sessionId);
+
+      if (session) {
+        session.summary = summary.bullets;
+      }
 
       res.status(201).json({
         sessionId,
@@ -272,6 +281,7 @@ app.post("/api/session/combine", (req, res) => {
     fileSize: session.fileSize,
     pageCount: session.pageCount,
     uploadedAt: session.uploadedAt,
+    summary: session.summary || [],
   }));
 
   sessions.set(combinedSessionId, {
@@ -335,6 +345,22 @@ app.post("/api/chat", async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
+  if (isSummaryIntent(trimmedQuestion)) {
+    const summaryResponse = session.documents
+      ? session.documents
+          .map((doc) => `**${doc.fileName}**:\n${(doc.summary || []).join("\n")}`)
+          .join("\n\n")
+      : `**${session.fileName}**:\n${(session.summary || []).join("\n")}`;
+
+    sendEvent(res, "chunk", {
+      content: summaryResponse,
+    });
+    sendEvent(res, "sources", { sources: [] });
+    sendEvent(res, "done", { complete: true });
+    res.end();
+    return;
+  }
+
   const topChunks = rankChunks(trimmedQuestion, session.chunks).slice(0, 3);
   const sourceMetadata = topChunks.map((chunk) => ({
     chunkIndex: chunk.id,
@@ -343,10 +369,11 @@ app.post("/api/chat", async (req, res) => {
     fileName: chunk.fileName || session.fileName,
   }));
 
-  if (!groq) {
+  const activeProvider = getActiveProvider();
+
+  if (!activeProvider) {
     sendEvent(res, "error", {
-      error:
-        "The AI service is not configured yet. Add GROQ_API_KEY on the backend.",
+      error: getProviderConfigurationError(),
     });
     sendEvent(res, "done", { complete: true });
     res.end();
@@ -360,42 +387,32 @@ app.post("/api/chat", async (req, res) => {
     .join("\n");
 
   try {
-    const stream = await groq.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: `Context:\n${context}\n\nQuestion: ${trimmedQuestion}`,
-        },
-      ],
-      stream: true,
-      max_tokens: 1024,
-    });
-
-    for await (const part of stream) {
-      const delta = part.choices?.[0]?.delta?.content || "";
-
-      if (delta) {
+    // Keep the existing SSE flow intact while swapping only the underlying model provider.
+    await streamChatAnswer({
+      provider: activeProvider,
+      systemPrompt,
+      context,
+      question: trimmedQuestion,
+      onChunk(delta) {
         sendEvent(res, "chunk", {
           content: delta,
         });
-      }
-    }
+      },
+    });
 
     sendEvent(res, "done", { complete: true });
     sendEvent(res, "sources", {
       sources: sourceMetadata,
     });
     res.end();
-  } catch (groqError) {
-    console.error("Groq API request failed:", summarizeGroqError(groqError));
+  } catch (providerError) {
+    console.error(
+      `${activeProvider} API request failed:`,
+      summarizeProviderError(providerError),
+    );
 
     sendEvent(res, "error", {
-      error: resolveGroqErrorMessage(groqError, MODEL),
+      error: resolveProviderErrorMessage(providerError, activeProvider),
     });
     sendEvent(res, "done", { complete: true });
     sendEvent(res, "sources", {
@@ -569,28 +586,28 @@ function cosineSimilarity(leftVector, rightVector) {
 }
 
 async function generateStarterQuestions(excerpt) {
-  if (!excerpt || !groq) {
+  const activeProvider = getActiveProvider();
+
+  if (!excerpt || !activeProvider) {
     return [];
   }
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: "user",
-          content: `Read this document excerpt and generate exactly 3 specific questions that can be directly and completely answered from this text alone. Questions must be factual, specific, and answerable only from the provided content — not general knowledge. Return only a JSON array of 3 question strings, nothing else. Example format:
+    const prompt = `Read this document excerpt and generate exactly 3 specific questions that can be directly and completely answered from this text alone. Questions must be factual, specific, and answerable only from the provided content — not general knowledge. Return only a JSON array of 3 question strings, nothing else. Example format:
 ["What is X?", "How does Y work?", "What are the requirements for Z?"]
 
-${excerpt}`,
-        },
-      ],
-      temperature: 0.4,
-      max_tokens: 256,
-    });
-    const payload = JSON.parse(
-      completion.choices?.[0]?.message?.content || "[]",
-    );
+${excerpt}`;
+    const rawResponse =
+      activeProvider === "groq"
+        ? await generateGroqJsonContent(prompt, {
+            temperature: 0.4,
+            maxTokens: 256,
+          })
+        : await generateGeminiJsonContent(prompt, {
+            temperature: 0.4,
+            maxTokens: 256,
+          });
+    const payload = parseJsonPayload(rawResponse, []);
     const questions = Array.isArray(payload)
       ? payload
           .filter((item) => typeof item === "string")
@@ -605,54 +622,224 @@ ${excerpt}`,
 }
 
 async function generateDocumentSummary(excerpt) {
-  if (!groq) {
+  const activeProvider = getActiveProvider();
+
+  if (!activeProvider) {
     return fallbackDocumentSummary(excerpt);
   }
 
   try {
-    const completion = await groq.chat.completions.create({
-      model: MODEL,
-      messages: [
-        {
-          role: "user",
-          content: [
-            "Summarize this document clearly and accurately for a professional reader.",
-            "Focus on the main purpose, key points, and any important outcomes or requirements.",
-            "Return strict JSON with two properties:",
-            '- "overview": a short overview paragraph in 2 to 3 sentences.',
-            '- "bullets": an array of 3 to 5 concise bullet points covering the most important details.',
-            "Do not invent information. Use only the provided document text.",
-            excerpt,
-          ].join("\n\n"),
-        },
-      ],
-      temperature: 0.3,
-      max_tokens: 320,
-      response_format: {
-        type: "json_object",
-      },
-    });
-    const payload = JSON.parse(
-      completion.choices?.[0]?.message?.content ||
-        '{"overview":"","bullets":[]}',
-    );
-    const overview =
-      typeof payload.overview === "string"
-        ? payload.overview.replace(/\s+/g, " ").trim()
-        : "";
-    const bullets = Array.isArray(payload.bullets)
-      ? payload.bullets
-          .filter((item) => typeof item === "string")
-          .map((item) => item.replace(/^\s*[-*•]\s*/, "").trim())
-          .filter(Boolean)
-          .slice(0, 5)
-      : [];
+    const prompt = `Summarize this document in exactly 3 bullet points. Each bullet should be one clear sentence describing the main content, themes, or purpose of this document. Return only the 3 bullets, no intro text.
 
-    return overview && bullets.length >= 3
-      ? { overview, bullets }
+${excerpt}`;
+    const rawResponse =
+      activeProvider === "groq"
+        ? await generateGroqTextContent(prompt, {
+            temperature: 0.3,
+            maxTokens: 320,
+          })
+        : await generateGeminiTextContent(prompt, {
+            // Gemini behaves better for summaries with a lower temperature and stricter wording.
+            temperature: 0.1,
+            maxTokens: 320,
+          });
+    const bullets = rawResponse
+      .split("\n")
+      .map((line) => line.replace(/^\s*[-*•]\s*/, "").trim())
+      .filter(Boolean)
+      .slice(0, 3);
+
+    return bullets.length === 3
+      ? { overview: "", bullets }
       : fallbackDocumentSummary(excerpt);
   } catch (_error) {
     return fallbackDocumentSummary(excerpt);
+  }
+}
+
+function getActiveProvider() {
+  if (LLM_PROVIDER === "groq") {
+    return groq ? "groq" : null;
+  }
+
+  if (LLM_PROVIDER === "gemini") {
+    return gemini ? "gemini" : null;
+  }
+
+  return null;
+}
+
+function getProviderConfigurationError() {
+  if (LLM_PROVIDER === "gemini") {
+    return "The AI service is not configured yet. Add GEMINI_API_KEY on the backend or switch LLM_PROVIDER back to groq.";
+  }
+
+  if (LLM_PROVIDER === "groq") {
+    return "The AI service is not configured yet. Add GROQ_API_KEY on the backend or switch LLM_PROVIDER to gemini.";
+  }
+
+  return 'The AI service is not configured yet. Set LLM_PROVIDER to "groq" or "gemini" and provide the matching API key.';
+}
+
+async function generateGroqJsonContent(
+  prompt,
+  { temperature, maxTokens, responseFormat } = {},
+) {
+  const completion = await groq.chat.completions.create({
+    model: GROQ_MODEL,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature,
+    max_tokens: maxTokens,
+    ...(responseFormat ? { response_format: responseFormat } : {}),
+  });
+
+  return completion.choices?.[0]?.message?.content || "";
+}
+
+async function generateGeminiJsonContent(prompt, { temperature, maxTokens } = {}) {
+  const model = gemini.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: {
+      temperature,
+      maxOutputTokens: maxTokens,
+      responseMimeType: "application/json",
+    },
+  });
+  const result = await model.generateContent(prompt);
+
+  return result.response.text();
+}
+
+async function generateGroqTextContent(prompt, { temperature, maxTokens } = {}) {
+  const completion = await groq.chat.completions.create({
+    model: GROQ_MODEL,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature,
+    max_tokens: maxTokens,
+  });
+
+  return completion.choices?.[0]?.message?.content || "";
+}
+
+async function generateGeminiTextContent(prompt, { temperature, maxTokens } = {}) {
+  const model = gemini.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: {
+      temperature,
+      maxOutputTokens: maxTokens,
+    },
+  });
+  const result = await model.generateContent(prompt);
+
+  return result.response.text();
+}
+
+function parseJsonPayload(rawResponse, fallbackValue) {
+  if (!rawResponse || typeof rawResponse !== "string") {
+    return fallbackValue;
+  }
+
+  const trimmed = rawResponse.trim();
+
+  try {
+    return JSON.parse(trimmed);
+  } catch (_error) {
+    // Gemini can occasionally wrap valid JSON in code fences or prepend a short note.
+    // Extract the first JSON-looking object/array so the existing API flow stays stable.
+    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const candidate = fencedMatch?.[1]?.trim() || extractJsonCandidate(trimmed);
+
+    if (!candidate) {
+      return fallbackValue;
+    }
+
+    try {
+      return JSON.parse(candidate);
+    } catch (_nestedError) {
+      return fallbackValue;
+    }
+  }
+}
+
+function extractJsonCandidate(value) {
+  const objectStart = value.indexOf("{");
+  const objectEnd = value.lastIndexOf("}");
+
+  if (objectStart !== -1 && objectEnd > objectStart) {
+    return value.slice(objectStart, objectEnd + 1);
+  }
+
+  const arrayStart = value.indexOf("[");
+  const arrayEnd = value.lastIndexOf("]");
+
+  if (arrayStart !== -1 && arrayEnd > arrayStart) {
+    return value.slice(arrayStart, arrayEnd + 1);
+  }
+
+  return "";
+}
+
+async function streamChatAnswer({ provider, systemPrompt, context, question, onChunk }) {
+  if (provider === "groq") {
+    const stream = await groq.chat.completions.create({
+      model: GROQ_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Context:\n${context}\n\nQuestion: ${question}`,
+        },
+      ],
+      stream: true,
+      max_tokens: 1024,
+    });
+
+    for await (const part of stream) {
+      const delta = part.choices?.[0]?.delta?.content || "";
+
+      if (delta) {
+        onChunk(delta);
+      }
+    }
+
+    return;
+  }
+
+  const model = gemini.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 1024,
+    },
+  });
+  const result = await model.generateContentStream(
+    [
+      systemPrompt,
+      "",
+      `Context:\n${context}`,
+      `Question: ${question}`,
+    ].join("\n\n"),
+  );
+
+  for await (const chunk of result.stream) {
+    const delta = chunk.text();
+
+    if (delta) {
+      onChunk(delta);
+    }
   }
 }
 
@@ -670,6 +857,20 @@ function fallbackStarterQuestions(excerpt) {
     `Can you summarize the section about ${secondary.toLowerCase()}?`,
     "Which details in this document matter most?",
   ];
+}
+
+function isSummaryIntent(question) {
+  const normalized = question.toLowerCase();
+
+  return (
+    normalized.includes("summary") ||
+    normalized.includes("summarize") ||
+    normalized.includes("summarise") ||
+    normalized.includes("overview") ||
+    normalized.includes("what is this document") ||
+    normalized.includes("what are these documents") ||
+    normalized.includes("what is this about")
+  );
 }
 
 function fallbackDocumentSummary(excerpt) {
@@ -749,11 +950,40 @@ function resolveGroqErrorMessage(error, model) {
   return "Groq API error: the answer could not be completed right now. Check the backend terminal for the exact error.";
 }
 
-function summarizeGroqError(error) {
+function resolveGeminiErrorMessage(error, model) {
+  const status = error?.status || error?.code;
+  const message = (error?.message || "").toLowerCase();
+
+  if (status === 401 || message.includes("api key")) {
+    return "Gemini API error: the API key was rejected. Check GEMINI_API_KEY in backend/.env and restart the server.";
+  }
+
+  if (status === 403 || message.includes("permission")) {
+    return `Gemini API error: access to model "${model}" was denied. Confirm your API key can use this model.`;
+  }
+
+  if (status === 429 || message.includes("quota") || message.includes("rate limit")) {
+    return "Gemini API error: quota or rate limits were hit. Check billing and usage for your API key and try again.";
+  }
+
+  if (status >= 500) {
+    return "Gemini API error: the service is having a temporary server issue. Please try again in a moment.";
+  }
+
+  return "Gemini API error: the answer could not be completed right now. Check the backend terminal for the exact error.";
+}
+
+function resolveProviderErrorMessage(error, provider) {
+  return provider === "gemini"
+    ? resolveGeminiErrorMessage(error, GEMINI_MODEL)
+    : resolveGroqErrorMessage(error, GROQ_MODEL);
+}
+
+function summarizeProviderError(error) {
   return {
     status: error?.status || null,
     code: error?.code || error?.error?.code || null,
     type: error?.name || null,
-    message: error?.message || "Unknown Groq API error",
+    message: error?.message || "Unknown provider error",
   };
 }

@@ -48,14 +48,6 @@ export class ExportService {
     cursorY = this.drawDocumentInfo(doc, documents, exportTimestamp, cursorY);
 
     for (const block of blocks) {
-      const blockHeight = this.measureBlock(doc, block);
-      const availableHeight = this.pageHeight - this.margin - this.footerHeight;
-
-      if (cursorY + blockHeight > availableHeight) {
-        doc.addPage();
-        cursorY = this.drawPageHeader(doc, exportDate);
-      }
-
       cursorY = this.drawBlock(doc, block, cursorY, exportDate);
     }
 
@@ -149,31 +141,6 @@ export class ExportService {
     return cursorY + 8;
   }
 
-  private measureBlock(doc: jsPDF, block: ChatExportBlock): number {
-    const questionLines = this.splitLines(doc, block.question, 11, "bold");
-    const answerLines = this.splitLines(doc, block.answer, 10, "normal");
-    const sourceLines = block.sources.flatMap((source) =>
-      this.splitLines(doc, this.formatSource(source), 8, "italic")
-    );
-
-    let height = 0;
-    height += questionLines.length * this.lineHeight;
-    height += 4;
-    height += answerLines.length * this.lineHeight;
-    height += 4;
-
-    if (sourceLines.length) {
-      height += this.lineHeight;
-      height += sourceLines.length * this.lineHeight;
-      height += 4;
-    }
-
-    height += 4;
-    height += this.blockSpacing;
-
-    return height;
-  }
-
   private drawBlock(doc: jsPDF, block: ChatExportBlock, startY: number, exportDate: string): number {
     let cursorY = startY;
     const availableHeight = this.pageHeight - this.margin - this.footerHeight;
@@ -188,14 +155,19 @@ export class ExportService {
     };
 
     const questionLines = this.splitLines(doc, `[Q] ${block.question}`, 11, "bold");
-    ensureSpace(questionLines.length * this.lineHeight);
+    const answerLines = this.splitLines(doc, block.answer, 10, "normal");
+    const minimumAnswerLines = Math.min(answerLines.length, 2);
+    const questionIntroHeight =
+      questionLines.length * this.lineHeight + 4 + minimumAnswerLines * this.lineHeight;
+
+    // Keep the question label with the start of its answer, but let the rest flow across pages.
+    ensureSpace(questionIntroHeight);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(11);
     doc.setTextColor(...this.colors.indigo);
     doc.text(questionLines, this.margin, cursorY);
     cursorY += questionLines.length * this.lineHeight + 4;
 
-    const answerLines = this.splitLines(doc, block.answer, 10, "normal");
     for (const line of answerLines) {
       ensureSpace(this.lineHeight);
       doc.setFont("helvetica", "normal");
