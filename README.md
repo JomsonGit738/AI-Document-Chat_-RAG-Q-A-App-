@@ -2,22 +2,32 @@
 
 **AI-powered document Q&A with RAG architecture**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Add%20Vercel%20URL-111827?style=for-the-badge)](#live-demo)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-111827?style=for-the-badge)](#live-demo)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](#)
 [![Angular](https://img.shields.io/badge/Angular-18-DD0031?style=for-the-badge&logo=angular)](https://angular.dev/)
 [![Express](https://img.shields.io/badge/Express-4-000000?style=for-the-badge&logo=express)](https://expressjs.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-gpt--4o--mini-412991?style=for-the-badge&logo=openai)](https://platform.openai.com/)
+[![Groq](https://img.shields.io/badge/Groq-gpt--oss--20b-F55036?style=for-the-badge)](https://groq.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
-DocChat is a production-style AI document assistant built as a split frontend/backend system. Users upload a PDF, the backend extracts and chunks its contents, a lightweight retrieval layer selects the most relevant passages, and OpenAI streams a grounded answer back to the UI in real time.
+DocChat is a production-style AI document assistant built as a split frontend/backend system. Users upload a PDF, the backend extracts and chunks its contents, a lightweight retrieval layer selects the most relevant passages, and Groq streams a grounded answer from OpenAI GPT-OSS 20B back to the UI in real time.
 
-## Screenshot Placeholder
+## Screenshots
 
-Add product screenshots here once deployed:
+### Dashboard
 
-- `docs/hero-dashboard.png`
-- `docs/upload-state.png`
-- `docs/streaming-chat.png`
+![DocChat dashboard](screenshots/hero-dashboard.png)
+
+### PDF upload
+
+![Uploading a PDF in DocChat](screenshots/upload-state.png)
+
+### Streaming chat
+
+![Streaming answer with source chunks in DocChat](screenshots/streaming-chat.png)
+
+## Live Demo
+
+[Open DocChat](https://docchat-qa.netlify.app/)
 
 ## Features
 
@@ -28,7 +38,7 @@ Add product screenshots here once deployed:
 - Drag-and-drop PDF upload with progress state, inline validation, and frontend PDF preview
 - Suggested starter questions generated from document content
 - Session cleanup endpoint for removing uploaded documents from memory
-- Rate limiting, CORS configuration, and deployment config for Render + Vercel
+- Rate limiting, CORS configuration, and deployment config for Render + Netlify
 - Mobile-responsive layout tuned for 375px, 768px, and desktop breakpoints
 
 ## Architecture
@@ -42,7 +52,7 @@ flowchart LR
     D --> E[In-memory Session Map]
     E --> F[Lightweight Retrieval<br/>cosine + keyword overlap]
     F --> G[Top 3 Chunks]
-    G --> H[OpenAI gpt-4o-mini]
+    G --> H[Groq API<br/>OpenAI GPT-OSS 20B]
     H -->|streamed answer| A
 ```
 
@@ -51,7 +61,7 @@ flowchart LR
 ```text
 /
 ├── frontend/   Angular 18 + Angular Material + TailwindCSS
-└── backend/    Express API + OpenAI streaming + PDF ingestion
+└── backend/    Express API + Groq streaming + PDF ingestion
 ```
 
 ## How It Works
@@ -61,7 +71,7 @@ flowchart LR
 3. The backend splits the text into overlapping chunks to preserve context across boundaries.
 4. For each user question, the backend scores chunks with cosine similarity plus keyword overlap.
 5. The top 3 chunks are injected into a constrained system prompt.
-6. OpenAI streams the answer back to the Angular client over Server-Sent Events.
+6. Groq streams the answer back to the Angular client over Server-Sent Events.
 7. The UI renders tokens live and exposes the exact chunks used for the answer.
 
 This is a simple RAG setup by design: enough retrieval grounding to feel realistic in an interview or portfolio review, without introducing a database or vector store just to prove the pattern.
@@ -86,7 +96,8 @@ cp backend/.env.example backend/.env
 
 Set:
 
-- `OPENAI_API_KEY`
+- `GROQ_API_KEY`
+- `GROQ_MODEL` (optional; defaults to `openai/gpt-oss-20b`)
 - `PORT`
 - `MAX_FILE_SIZE`
 - `ALLOWED_ORIGINS`
@@ -108,7 +119,15 @@ Backend: `http://localhost:3000`
 
 ## Quality Checks
 
-Run these after install:
+Run the backend and frontend test suites together:
+
+```bash
+npm run test
+```
+
+This command completed successfully in the project environment.
+
+You can also run each suite separately:
 
 ```bash
 npm run build --prefix frontend
@@ -118,26 +137,27 @@ npm run test --prefix backend
 
 ## Deployment
 
-### Frontend on Vercel
+### Frontend on Netlify
 
-- Root directory: `frontend`
+- Base directory: `frontend`
 - Build command: `npm run build`
-- Output directory: `dist/frontend/browser`
-- SPA rewrite config is already included in `frontend/vercel.json`
+- Publish directory: `dist/frontend/browser`
+- `frontend/public/_redirects` includes the SPA fallback for Angular routes
+- Add the Netlify site URL to the backend's `ALLOWED_ORIGINS` environment variable on Render
 
 ### Backend on Render
 
 - Create a web service from the repo root
 - Render blueprint file: `backend/render.yaml`
-- Set `OPENAI_API_KEY` and `ALLOWED_ORIGINS`
+- Set `GROQ_API_KEY` and `ALLOWED_ORIGINS`
 - Default production frontend config points to `https://docchat-backend.onrender.com`
 
 ## Tech Stack
 
 - Frontend: Angular 18, TypeScript, Angular Material, TailwindCSS, RxJS, PDF.js
 - Backend: Node.js, Express, multer, pdf-parse, express-rate-limit
-- AI: OpenAI `gpt-4o-mini` with streamed responses
-- Deployment: Vercel + Render
+- AI: Groq API with `openai/gpt-oss-20b` and streamed responses
+- Deployment: Netlify + Render
 
 ## What I’d Improve Next
 
@@ -147,6 +167,3 @@ npm run test --prefix backend
 - Persist conversations and chunk metadata in a real datastore
 - Add citation highlighting back into the PDF preview pane
 
-## Live Demo
-
-Add your deployed Vercel URL and repository link here once published.

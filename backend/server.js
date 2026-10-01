@@ -16,7 +16,7 @@ const MAX_FILE_SIZE = Number(process.env.MAX_FILE_SIZE || 10 * 1024 * 1024);
 const MAX_QUESTION_LENGTH = Number(process.env.MAX_QUESTION_LENGTH || 500);
 // This flag lets .env choose the active provider without changing any frontend or API flow.
 const LLM_PROVIDER = (process.env.LLM_PROVIDER || "groq").trim().toLowerCase();
-const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || "http://localhost:4200")
   .split(",")
