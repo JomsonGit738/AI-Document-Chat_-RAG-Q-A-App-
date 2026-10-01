@@ -25,6 +25,10 @@ DocChat is a production-style AI document assistant built as a split frontend/ba
 
 ![Streaming answer with source chunks in DocChat](screenshots/streaming-chat.png)
 
+### Export Chat
+
+![Export chat and download as a PDF file](screenshots/download-chat-pdf.png.png)
+
 ## Live Demo
 
 [Open DocChat](https://docchat-qa.netlify.app/)
@@ -35,6 +39,7 @@ DocChat is a production-style AI document assistant built as a split frontend/ba
 - Node.js + Express backend with PDF ingestion, in-memory sessions, and SSE streaming
 - Retrieval-Augmented Generation flow using chunking plus cosine/keyword scoring
 - Source chunk disclosure below each AI response for grounded answers
+- Export chat conversations as downloadable PDFs
 - Drag-and-drop PDF upload with progress state, inline validation, and frontend PDF preview
 - Suggested starter questions generated from document content
 - Session cleanup endpoint for removing uploaded documents from memory
