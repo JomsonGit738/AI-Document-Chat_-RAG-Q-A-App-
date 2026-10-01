@@ -27,7 +27,7 @@ DocChat is a production-style AI document assistant built as a split frontend/ba
 
 ### Export Chat
 
-![Export chat and download as a PDF file](screenshots/download-chat-pdf.png.png)
+![Export chat and download as a PDF file](screenshots/download-chat-pdf.png)
 
 ## Live Demo
 
