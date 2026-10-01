@@ -2,14 +2,14 @@
 
 **AI-powered document Q&A with RAG architecture**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-111827?style=for-the-badge)](#live-demo)
-[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](#)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Open%20App-111827?style=for-the-badge)](https://docchat-qa.netlify.app/)
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/JomsonGit738/AI-Document-Chat_-RAG-Q-A-App-)
 [![Angular](https://img.shields.io/badge/Angular-18-DD0031?style=for-the-badge&logo=angular)](https://angular.dev/)
 [![Express](https://img.shields.io/badge/Express-4-000000?style=for-the-badge&logo=express)](https://expressjs.com/)
 [![Groq](https://img.shields.io/badge/Groq-gpt--oss--20b-F55036?style=for-the-badge)](https://groq.com/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 
-DocChat is a production-style AI document assistant built as a split frontend/backend system. Users upload a PDF, the backend extracts and chunks its contents, a lightweight retrieval layer selects the most relevant passages, and Groq streams a grounded answer from OpenAI GPT-OSS 20B back to the UI in real time.
+DocChat is a full-stack AI document assistant built as a split frontend/backend system. Users upload a PDF, the backend extracts and chunks its contents, a lightweight retrieval layer selects the most relevant passages, and Groq streams a grounded answer from OpenAI GPT-OSS 20B back to the UI in real time.
 
 ## Screenshots
 
@@ -79,7 +79,7 @@ flowchart LR
 6. Groq streams the answer back to the Angular client over Server-Sent Events.
 7. The UI renders tokens live and exposes the exact chunks used for the answer.
 
-This is a simple RAG setup by design: enough retrieval grounding to feel realistic in an interview or portfolio review, without introducing a database or vector store just to prove the pattern.
+Retrieval uses in-memory chunk scoring to keep the stack simple; see “What I’d Improve Next” for the production path (vector store, persistence).
 
 ## Local Setup
 
@@ -130,7 +130,7 @@ Run the backend and frontend test suites together:
 npm run test
 ```
 
-This command completed successfully in the project environment.
+Current test inventory: 1 frontend spec and 0 backend tests. Coverage is not currently reported, and the test suite is limited. The backend test command reports 0 tests; the frontend test run requires ChromeHeadless.
 
 You can also run each suite separately:
 
@@ -156,6 +156,7 @@ npm run test --prefix backend
 - Render blueprint file: `backend/render.yaml`
 - Set `GROQ_API_KEY` and `ALLOWED_ORIGINS`
 - Default production frontend config points to `https://docchat-backend.onrender.com`
+- The backend uses Render's free tier and may cold-start after inactivity, so the first request can take longer than usual.
 
 ## Tech Stack
 
